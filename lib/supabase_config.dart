@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+export 'package:supabase_flutter/supabase_flutter.dart';
 
 // Supabase API Data
 const SUPABASE_URL = 'https://zdsdqyvzaidlfpuhtokb.supabase.co';

@@ -1,5 +1,6 @@
 import 'package:saferide/app_import.dart';
 import 'package:saferide/style.dart';
+import 'package:saferide/login.dart';
 
 void main() async {
   await SupabaseManager.init();
@@ -16,7 +17,8 @@ class SafeRide extends StatelessWidget {
       title: 'Safe Ride',
 
       routes: {
-        '/': (_) => const InitialScreen(),
+        '/': (_) => InitialScreen(),
+        '/login': (_) => LoginScreen(),
       },
       initialRoute: '/',
 
@@ -79,7 +81,7 @@ class InitialScreen extends StatelessWidget {
                 ),
                 onPressed: () {
                   debugPrint('Move to LoginScreen');
-                  // Navigator.pushNamed(context, '/login');
+                  Navigator.pushNamed(context, '/login');
                 },
                 child: simpleText(
                   '로그인',

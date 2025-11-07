@@ -1,0 +1,212 @@
+import 'package:saferide/app_import.dart';
+import 'package:saferide/style.dart';
+
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final _loginFormKey = GlobalKey<FormState>();
+  String _email = '';
+  String _password = '';
+
+  bool _pwObscure = true;
+
+  Future<void> _login() async {
+    if(!_loginFormKey.currentState!.validate()) return;
+
+    _loginFormKey.currentState!.save();
+
+    setState(() {
+
+    });
+
+    try {
+      final res = await SupabaseManager.client.auth.signInWithPassword(
+        email: _email.trim(),
+        password: _password.trim(),
+      );
+
+      if(res.user != null){
+        if(!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Log in completed: ${res.user!.email}'),),
+        );
+
+        // Navigator.pushReplacementNamed(context, '/home');
+      }
+    } on AuthException catch (e) {
+      if(e.message.contains('Invalid login')) {
+        _showLoginErrorDialog('Check your email or password.\n\n{$e.message}');
+      } else if(e.message.contains('not confirmed')) {
+        _showLoginErrorDialog('Confirm your email first.\n\n{$e.message}');
+      }
+    } catch (e) {
+      _showLoginErrorDialog('Error occured.\n\n{$e}');
+    } finally {
+      setState(() {
+
+      });
+    }
+  }
+  
+  void _showLoginErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Failed to log in'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
+      body: SingleChildScrollView(
+        padding: EdgeInsets.all(20.0),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisSize: MainAxisSize.max,
+            children: [
+              Image.asset(
+                'assets/logo.png',
+                width: 250,
+                height: 250,
+                fit: BoxFit.fill,
+              ),
+
+              simpleText(
+                'Safe Ride',
+                36, FontWeight.bold, Colors.black, TextAlign.center
+              ),
+
+              SizedBox(height: 10),
+
+              simpleText(
+                '계정에 로그인하세요',
+                20, FontWeight.normal, Colors.black, TextAlign.center
+              ),
+
+              SizedBox(height: 40),
+
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: 420),
+                    child: Container(
+                      margin: EdgeInsets.symmetric(horizontal: 16.0),
+                      padding: EdgeInsets.all(20.0),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16.0),
+                        border: Border.all(),
+                      ),
+                      child: Form(
+                        key: _loginFormKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            inputLabel('이메일'),
+                            TextFormField(
+                              decoration: inputDeco('example@email.com'),
+                              keyboardType: TextInputType.emailAddress,
+                              validator: (v) => (v == null || v.isEmpty)
+                                ? '이메일을 입력하세요'
+                                : null,
+                              onSaved: (v) => _email = v!.trim(),
+                              textInputAction: TextInputAction.next
+                            ),
+
+                            SizedBox(height: 16.0),
+
+                            inputLabel('비밀번호'),
+                            TextFormField(
+                              obscureText: _pwObscure,
+                              decoration: InputDecoration(
+                                hintText: 'Password',
+                                contentPadding: EdgeInsets.symmetric(horizontal: 14.0, vertical: 14.0),
+                                filled: true,
+                                fillColor: Colors.white,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12.0),
+                                  borderSide: BorderSide(color: Colors.grey, width: 1.0),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12.0),
+                                  borderSide: BorderSide(color: Colors.grey),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12.0),
+                                  borderSide: BorderSide(color: Colors.blue, width: 1.8),
+                                ),
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _pwObscure
+                                      ? Icons.visibility_outlined
+                                      : Icons.visibility_off_outlined
+                                  ),
+                                  onPressed: () {
+                                    setState(() => _pwObscure = !_pwObscure);
+                                  },
+                                ),
+                              ),
+                              validator: (v) => (v == null || v.isEmpty)
+                                ? '비밀번호를 입력하세요'
+                                : null,
+                              onSaved: (v) => _password = v!.trim(),
+                              textInputAction: TextInputAction.done,
+                            ),
+
+                            SizedBox(height: 24),
+
+                            SizedBox(
+                              height: 48,
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.blueAccent,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12.0),
+                                  ),
+                                ),
+                                onPressed: () {
+                                  _login();
+                                  debugPrint("Log in");
+                                },
+                                child: simpleText(
+                                  '로그인',
+                                  20, FontWeight.bold, Colors.white, TextAlign.start),
+                              ),
+                            ),
+                          ],
+                        )
+                      )
+                    )
+                  )
+                ],
+              )
+            ],
+          )
+        )
+      ),
+    );
+  }
+}
