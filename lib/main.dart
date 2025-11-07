@@ -1,6 +1,6 @@
 import 'package:saferide/app_import.dart';
 import 'package:saferide/style.dart';
-import 'package:saferide/login.dart';
+import 'package:saferide/route_import.dart';
 
 void main() async {
   await SupabaseManager.init();
@@ -19,6 +19,7 @@ class SafeRide extends StatelessWidget {
       routes: {
         '/': (_) => InitialScreen(),
         '/login': (_) => LoginScreen(),
+        '/login/signup': (_) => SignupScreen(),
       },
       initialRoute: '/',
 

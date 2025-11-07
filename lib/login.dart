@@ -141,32 +141,13 @@ class _LoginScreenState extends State<LoginScreen> {
                             inputLabel('비밀번호'),
                             TextFormField(
                               obscureText: _pwObscure,
-                              decoration: InputDecoration(
-                                hintText: 'Password',
-                                contentPadding: EdgeInsets.symmetric(horizontal: 14.0, vertical: 14.0),
-                                filled: true,
-                                fillColor: Colors.white,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12.0),
-                                  borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12.0),
-                                  borderSide: BorderSide(color: Colors.grey),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12.0),
-                                  borderSide: BorderSide(color: Colors.blue, width: 1.8),
-                                ),
+                              decoration: inputDeco('Password').copyWith(
                                 suffixIcon: IconButton(
-                                  icon: Icon(
-                                    _pwObscure
-                                      ? Icons.visibility_outlined
-                                      : Icons.visibility_off_outlined
+                                  icon: Icon(_pwObscure
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined
                                   ),
-                                  onPressed: () {
-                                    setState(() => _pwObscure = !_pwObscure);
-                                  },
+                                  onPressed: () => setState(() => _pwObscure = !_pwObscure),
                                 ),
                               ),
                               validator: (v) => (v == null || v.isEmpty)
@@ -179,7 +160,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             SizedBox(height: 24),
 
                             SizedBox(
-                              height: 48,
+                              width: double.infinity,
+                              height: 48.0,
                               child: ElevatedButton(
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.blueAccent,
@@ -197,12 +179,33 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
                           ],
-                        )
-                      )
-                    )
-                  )
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
-              )
+              ),
+
+              SizedBox(height: 16.0),
+
+              simpleText(
+                '아직 계정이 없으신가요?',
+                16, FontWeight.bold, Colors.grey, TextAlign.center,
+              ),
+
+              TextButton(
+                onPressed: () {Navigator.pushNamed(context, '/login/signup');},
+                child: Text(
+                  '회원가입',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.normal,
+                    color: Colors.black,
+                    decoration: TextDecoration.underline,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
             ],
           )
         )
