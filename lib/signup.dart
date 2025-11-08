@@ -18,6 +18,125 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _pwObscure = true;
   bool _pwCheckObscure = true;
 
+  bool _afterOCR = false;
+  bool _lcVerified = false;
+
+  Future<void> _pickLicenseImage(ImageSource src) async {
+    ImagePicker picker = ImagePicker();
+    final XFile? pickedFile = await picker.pickImage(source: src);
+
+    if(pickedFile == null) return;
+
+    setState(() {
+
+    });
+
+    await _extractText(File(pickedFile.path));
+  }
+
+  Future<void> _extractText(File imageFile) async {
+
+  }
+
+  Widget _lcImageUploadBox() {
+    return DottedBorder(
+      options: CircularDottedBorderOptions(
+        color: Colors.grey,
+        strokeWidth: 2.0,
+        dashPattern: [6, 3],
+      ),
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.symmetric(vertical: 24.0, horizontal: 24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.upload_outlined,
+              size: 48.0,
+              color: Colors.grey,
+            ),
+
+            SizedBox(height: 12.0),
+
+            simpleText(
+              '면허증을 촬영하거나 선택해주세요',
+              14.0, FontWeight.normal, Colors.grey, TextAlign.center
+            ),
+
+            SizedBox(height: 16.0),
+
+            SizedBox(
+              width: double.infinity,
+              height: 42.0,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blueAccent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12.0),
+                  ),
+                ),
+                onPressed: () => _pickLicenseImage(ImageSource.camera),
+                child: simpleText(
+                  '사진 촬영하기',
+                  16.0, FontWeight.normal, Colors.white, TextAlign.center
+                ),
+              ),
+            ),
+
+            SizedBox(height: 16.0),
+
+            SizedBox(
+              width: double.infinity,
+              height: 42.0,
+              child: OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: Colors.grey),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12.0),
+                  ),
+                ),
+                onPressed: () => _pickLicenseImage(ImageSource.gallery),
+                child: simpleText(
+                  '파일에서 선택하기',
+                  16.0, FontWeight.normal, Colors.black, TextAlign.center
+                ),
+              ),
+            ),
+
+            SizedBox(height: 8.0),
+
+            const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.image_outlined, size: 14.0, color: Colors.grey),
+                SizedBox(width: 4.0),
+                Text('이미지 인식', style: TextStyle(fontSize: 10.0)),
+                SizedBox(width: 8.0),
+                Icon(Icons.text_snippet_outlined, size: 14.0, color: Colors.grey),
+                SizedBox(width: 4.0),
+                Text('텍스트 추출', style: TextStyle(fontSize: 10.0)),
+                SizedBox(width: 8.0),
+                Icon(Icons.verified_user_outlined, size: 14.0, color: Colors.grey),
+                SizedBox(width: 4.0),
+                Text('유효성 검증', style: TextStyle(fontSize: 10.0)),
+              ],
+            )
+          ],
+        )
+      ),
+    );
+  }
+
+  Widget _verifyBox() {
+    return Container();
+  }
+
+  Widget _verifiedResultBox() {
+    return Column();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -165,6 +284,25 @@ class _SignupScreenState extends State<SignupScreen> {
                             ),
 
                             SizedBox(height: 32),
+
+                            simpleText(
+                              '운전면허증 등록',
+                              24.0, FontWeight.bold, Colors.black, TextAlign.center
+                            ),
+
+                            SizedBox(height: 12.0),
+
+                            simpleText(
+                              '안전한 킥보드 이용을 위해 운전면허증을 등록해주세요',
+                              16.0, FontWeight.normal, Colors.black, TextAlign.center
+                            ),
+
+                            SizedBox(height: 16.0),
+
+                            if(!_lcVerified)
+                              _afterOCR ? _verifyBox() : _lcImageUploadBox()
+                            else
+                              _verifiedResultBox(),
 
                             SizedBox(
                               width: double.infinity,
