@@ -20,6 +20,7 @@ class SafeRide extends StatelessWidget {
         '/': (_) => InitialScreen(),
         '/login': (_) => LoginScreen(),
         '/login/signup': (_) => SignupScreen(),
+        '/home': (_) => HomeScreen(),
       },
       initialRoute: '/',
 

@@ -33,6 +33,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
   bool _imgLoading = false;
   bool _verifyLoading = false;
+  bool _authLoading = false;
 
   Future<void> _pickLicenseImage(ImageSource src) async {
     if(_imgLoading) return;
@@ -395,6 +396,61 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
+  Future<void> _signUp() async {
+    if(!_signUpFormKey.currentState!.validate()) return;
+
+    setState(() {
+      _authLoading = true;
+    });
+
+    final name = _nameC.text.trim();
+    final email = _emailC.text.trim();
+    final password = _pwC.text.trim();
+    final phone = _phoneC.text.trim();
+
+    try {
+      final res = await SupabaseManager.client.auth.signUp(
+        email: email,
+        password: password,
+      );
+
+      final user = res.user;
+      if(user == null) return;
+
+      final payload = {
+        'id': user.id,
+        'email': email,
+        'name': name,
+        'phone': phone,
+        'created_at': DateTime.now().toIso8601String(),
+      };
+
+      await SupabaseManager.client
+          .from('profiles')
+          .insert(payload)
+          .select()
+          .single();
+
+      if(!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('회원가입 성공: ${res.user!.email}')),
+      );
+
+      Navigator.pushReplacementNamed(context, '/login');
+    } on AuthException catch (e) {
+      debugPrint('Failed to sign up: ${e.message}');
+    } catch (e) {
+      debugPrint('Error occurred: $e');
+    } finally {
+      if(mounted){
+        setState(() {
+          _authLoading = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -575,12 +631,14 @@ class _SignupScreenState extends State<SignupScreen> {
                                   ),
                                 ),
                                 onPressed: () {
-                                  debugPrint('Sign Up');
+                                  (_authLoading || !_lcVerified) ? null : _signUp();
                                 },
-                                child: simpleText(
-                                  '회원가입',
-                                  20.0, FontWeight.bold, Colors.white, TextAlign.start
-                                ),
+                                child: _authLoading
+                                  ? CircularProgressIndicator(color: Colors.white)
+                                  : simpleText(
+                                      '회원가입',
+                                      20.0, FontWeight.bold, Colors.white, TextAlign.start
+                                    ),
                               ),
                             ),
                           ],

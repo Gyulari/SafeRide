@@ -37,7 +37,7 @@ class _LoginScreenState extends State<LoginScreen> {
           SnackBar(content: Text('Log in completed: ${res.user!.email}'),),
         );
 
-        // Navigator.pushReplacementNamed(context, '/home');
+        Navigator.pushReplacementNamed(context, '/home');
       }
     } on AuthException catch (e) {
       if(e.message.contains('Invalid login')) {
@@ -46,7 +46,7 @@ class _LoginScreenState extends State<LoginScreen> {
         _showLoginErrorDialog('Confirm your email first.\n\n{$e.message}');
       }
     } catch (e) {
-      _showLoginErrorDialog('Error occured.\n\n{$e}');
+      _showLoginErrorDialog('Error occurred.\n\n{$e}');
     } finally {
       setState(() {
 
