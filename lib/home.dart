@@ -1,4 +1,5 @@
 import 'package:saferide/app_import.dart';
+import 'package:saferide/map.dart';
 
 class HomeScreen extends StatefulWidget{
   const HomeScreen({super.key});
@@ -11,6 +12,19 @@ class HomeScreen extends StatefulWidget{
 class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(body: Container());
+    return Scaffold(
+      appBar: AppBar(title: Text('Safe Ride')),
+      body: Stack(
+        children: [
+          MapView(),
+          Positioned(
+            bottom: 100.0,
+            left: 16.0,
+            right: 16.0,
+            child: Row(),
+          ),
+        ],
+      )
+    );
   }
 }

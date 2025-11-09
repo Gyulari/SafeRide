@@ -1,8 +1,14 @@
 import 'package:saferide/app_import.dart';
 import 'package:saferide/style.dart';
 import 'package:saferide/route_import.dart';
+import 'package:kakao_map_plugin/kakao_map_plugin.dart';
 
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  AuthRepository.initialize(appKey: 'd048fb7ea16988dc1a7928b0e450f4f7');
+
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+
   await SupabaseManager.init();
   runApp(const SafeRide());
 }
