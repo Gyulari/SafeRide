@@ -4,3 +4,4 @@ export 'package:flutter/services.dart';
 export 'package:saferide/supabase_config.dart';
 export 'package:image_picker/image_picker.dart';
 export 'package:dotted_border/dotted_border.dart';
+export 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';

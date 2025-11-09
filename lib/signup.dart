@@ -22,6 +22,10 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _afterVerify = false;
 
   bool _lcVerified = false;
+  String _extractedText = '';
+  String? lcNumber;
+  String? lcName;
+  String? lcBirth;
   final _lcNumberC = TextEditingController();
   final _lcNameC = TextEditingController();
   final _lcBirthC = TextEditingController();
@@ -51,7 +55,74 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   Future<void> _extractText(File imageFile) async {
+    final inputImage = InputImage.fromFile(imageFile);
+    final textRecognizer = TextRecognizer(script: TextRecognitionScript.korean);
 
+    try {
+      final RecognizedText recognizedText = await textRecognizer.processImage(inputImage);
+
+      setState(() {
+        _extractedText = recognizedText.text;
+      });
+
+      _parseLicenseInfo(_extractedText);
+
+      _lcNumberC.text = lcNumber ?? '';
+      _lcNameC.text = lcName ?? '';
+      _lcBirthC.text = lcBirth ?? '';
+    } catch (e) {
+      debugPrint('Failed to recognize text: $e');
+    } finally {
+      textRecognizer.close();
+    }
+  }
+
+  void _parseLicenseInfo(String text) {
+    final ignoreWords = [
+      '운전면허증',
+      '자동차운전면허증',
+      '종보통',
+      '종대형',
+      '원동기'
+    ];
+
+    final lines = text
+        .split('\n')
+        .map((e) => e
+        .replaceAll(RegExp(r'[\s\u200B-\u200F\uFEFF]'), '')
+        .trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+
+    final lcNumberRegex = RegExp(r'\d{2}-\d{2}-\d{6}-\d{2}');
+    final nameRegex = RegExp(r'^[\uac00-\ud7a3]{2,4}$');
+    final birthRegex = RegExp(r'\b(\d{6})-\d{7}\b');
+
+    for(int i=0; i<lines.length; i++){
+      final line = lines[i];
+
+      if(ignoreWords.any((word) => line.contains(word))) continue;
+
+      if(lcNumber == null && lcNumberRegex.hasMatch(line)){
+        lcNumber = lcNumberRegex.firstMatch(line)!.group(0);
+      }
+
+      if(lcName == null && nameRegex.hasMatch(line)){
+        lcName = nameRegex.firstMatch(line)!.group(0);
+      }
+
+      if(lcBirth == null && birthRegex.hasMatch(line)){
+        lcBirth = birthRegex.firstMatch(line)!.group(1);
+      }
+    }
+
+    debugPrint('면허번호: $lcNumber');
+    debugPrint('이름: $lcName');
+    debugPrint('생년월일: $lcBirth');
+
+    setState(() {
+      _afterOCR = true;
+    });
   }
 
   Widget _lcImageUploadBox() {
