@@ -19,16 +19,32 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _pwCheckObscure = true;
 
   bool _afterOCR = false;
+  bool _afterVerify = false;
+
   bool _lcVerified = false;
+  final _lcNumberC = TextEditingController();
+  final _lcNameC = TextEditingController();
+  final _lcBirthC = TextEditingController();
+  String _verifiedMessage = '';
+
+  bool _imgLoading = false;
+  bool _verifyLoading = false;
 
   Future<void> _pickLicenseImage(ImageSource src) async {
+    if(_imgLoading) return;
+
+    setState(() {
+      _imgLoading = true;
+    });
+
     ImagePicker picker = ImagePicker();
     final XFile? pickedFile = await picker.pickImage(source: src);
 
     if(pickedFile == null) return;
 
     setState(() {
-
+      _afterOCR = true;
+      _imgLoading = false;
     });
 
     await _extractText(File(pickedFile.path));
@@ -40,7 +56,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
   Widget _lcImageUploadBox() {
     return DottedBorder(
-      options: CircularDottedBorderOptions(
+      options: RectDottedBorderOptions(
         color: Colors.grey,
         strokeWidth: 2.0,
         dashPattern: [6, 3],
@@ -50,6 +66,7 @@ class _SignupScreenState extends State<SignupScreen> {
         padding: EdgeInsets.symmetric(vertical: 24.0, horizontal: 24.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               Icons.upload_outlined,
@@ -108,18 +125,18 @@ class _SignupScreenState extends State<SignupScreen> {
 
             const Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
+              mainAxisSize: MainAxisSize.max,
               children: [
                 Icon(Icons.image_outlined, size: 14.0, color: Colors.grey),
-                SizedBox(width: 4.0),
+                SizedBox(width: 2.0),
                 Text('이미지 인식', style: TextStyle(fontSize: 10.0)),
-                SizedBox(width: 8.0),
+                SizedBox(width: 4.0),
                 Icon(Icons.text_snippet_outlined, size: 14.0, color: Colors.grey),
-                SizedBox(width: 4.0),
+                SizedBox(width: 2.0),
                 Text('텍스트 추출', style: TextStyle(fontSize: 10.0)),
-                SizedBox(width: 8.0),
-                Icon(Icons.verified_user_outlined, size: 14.0, color: Colors.grey),
                 SizedBox(width: 4.0),
+                Icon(Icons.verified_user_outlined, size: 14.0, color: Colors.grey),
+                SizedBox(width: 2.0),
                 Text('유효성 검증', style: TextStyle(fontSize: 10.0)),
               ],
             )
@@ -130,11 +147,181 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   Widget _verifyBox() {
-    return Container();
+    return Container(
+      padding: EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey),
+        borderRadius: BorderRadius.circular(12.0),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _licenseTextField('면허증 번호', _lcNumberC),
+          SizedBox(height: 8.0),
+          _licenseTextField('이름', _lcNameC),
+          SizedBox(height: 8.0),
+          _licenseTextField('생년월일', _lcBirthC),
+          SizedBox(height: 16.0),
+
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              label: Text('면허증 검증'),
+              icon: Icon(Icons.verified_user_outlined),
+              onPressed: verifySubmit,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _licenseTextField(String label, TextEditingController controller) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        simpleText(
+          label,
+          16.0, FontWeight.normal, Colors.black, TextAlign.start
+        ),
+
+        SizedBox(height: 4.0),
+
+        TextField(
+          controller: controller,
+          decoration: InputDecoration(
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void verifySubmit() async {
+    if(_verifyLoading) return;
+
+    setState(() {
+      _verifyLoading = true;
+    });
+
+    final lcNumber = _lcNumberC.text.trim();
+    final name = _lcNameC.text.trim();
+    final birth = _lcBirthC.text.trim();
+
+    if(lcNumber.isEmpty || name.isEmpty || birth.isEmpty) return;
+
+    final verifyRes = await verifyLicense(lcNumber: lcNumber, name: name, birth: birth);
+
+    setState(() {
+      _lcVerified = verifyRes;
+
+      if(verifyRes){
+        _verifiedMessage = '면허증 검증 성공';
+      } else{
+        _verifiedMessage = '면허증 검증 실패';
+      }
+
+      _verifyLoading = false;
+      _afterVerify = true;
+    });
+  }
+
+  Future<bool> verifyLicense({
+    required String lcNumber,
+    required String name,
+    required String birth,
+  }) async {
+    try {
+      final res = await SupabaseManager.client
+          .from('license_verify_test')
+          .select('*')
+          .eq('lcNumber', lcNumber)
+          .eq('name', name)
+          .eq('birth', birth)
+          .limit(1);
+
+      if(res.isNotEmpty) {
+        return true;
+      } else {
+        return false;
+      }
+    } on PostgrestException catch (e) {
+      debugPrint('Supabase error: ${e.message}');
+      return false;
+    } catch (e) {
+      debugPrint('Unexpected error: $e');
+      return false;
+    }
   }
 
   Widget _verifiedResultBox() {
-    return Column();
+    final icon = _lcVerified ? Icons.check_circle : Icons.error;
+    final iconColor = _lcVerified ? Colors.green : Colors.red;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Card(
+          elevation: 0.0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12.0),
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                Icon(icon, size: 64.0, color: iconColor),
+                SizedBox(height: 12.0),
+
+                simpleText(
+                  _verifiedMessage,
+                  18.0, FontWeight.bold, Colors.black, TextAlign.center
+                ),
+                SizedBox(height: 12.0),
+
+                if(_lcVerified) ...[
+                  _verifiedResultRow('면허증 번호', _lcNumberC.text.trim()),
+                  _verifiedResultRow('이름', _lcNameC.text.trim()),
+                  _verifiedResultRow('생년월일', _lcBirthC.text.trim()),
+                ]
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _verifiedResultRow(String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        SizedBox(
+          width: 84.0,
+          child: simpleText(
+            label,
+            12.0, FontWeight.normal, Colors.black, TextAlign.start
+          ),
+        ),
+
+        Expanded(
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              border: Border.all(color: Colors.white),
+              borderRadius: BorderRadius.circular(12.0),
+            ),
+            child: simpleText(
+              value.isEmpty ? '-' : value,
+              14.0, FontWeight.normal, Colors.black, TextAlign.start
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -293,16 +480,18 @@ class _SignupScreenState extends State<SignupScreen> {
                             SizedBox(height: 12.0),
 
                             simpleText(
-                              '안전한 킥보드 이용을 위해 운전면허증을 등록해주세요',
+                              '안전한 킥보드 이용을 위해\n운전면허증을 등록해주세요',
                               16.0, FontWeight.normal, Colors.black, TextAlign.center
                             ),
 
                             SizedBox(height: 16.0),
 
-                            if(!_lcVerified)
+                            if(!_afterVerify)
                               _afterOCR ? _verifyBox() : _lcImageUploadBox()
                             else
                               _verifiedResultBox(),
+
+                            SizedBox(height: 16.0),
 
                             SizedBox(
                               width: double.infinity,
