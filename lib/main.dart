@@ -93,8 +93,30 @@ class InitialScreen extends StatelessWidget {
                 },
                 child: simpleText(
                   '로그인',
-                  20, FontWeight.bold, Colors.white, TextAlign.start),
+                  20, FontWeight.bold, Colors.white, TextAlign.start
                 ),
+              ),
+
+              SizedBox(height: 20.0),
+
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  minimumSize: Size.fromHeight(0),
+                  backgroundColor: Colors.grey,
+                  padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () {
+                  debugPrint('Move to HomeScreen');
+                  Navigator.pushNamed(context, '/home');
+                },
+                child: simpleText(
+                    '테스트용 둘러보기',
+                    20, FontWeight.bold, Colors.white, TextAlign.start
+                ),
+              ),
 
               SizedBox(height: 40),
 

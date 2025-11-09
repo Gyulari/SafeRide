@@ -57,7 +57,7 @@ class _MapViewState extends State<MapView> {
           center: curCenter,
           currentLevel: 3,
           zoomControl: true,
-          zoomControlPosition: ControlPosition.topRight,
+          zoomControlPosition: ControlPosition.bottomRight,
           markers: markers.toList(),
         ),
 
