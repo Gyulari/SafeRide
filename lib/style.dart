@@ -42,3 +42,14 @@ InputDecoration inputDeco(String hint) {
     )
   );
 }
+
+Widget divider() {
+  return Padding(
+    padding: EdgeInsets.symmetric(horizontal: 20.0),
+    child: Divider(
+      height: 1.0,
+      thickness: 1.0,
+      color: Color(0xFFF0F3F7),
+    ),
+  );
+}

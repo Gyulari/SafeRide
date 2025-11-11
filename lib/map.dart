@@ -24,6 +24,8 @@ class _MapViewState extends State<MapView> {
   Device? selectedDevice;
   LatLng? selectedLatLng;
 
+  bool _deviceInfoLoading = false;
+
   Future<List<LatLng>> _keywordSearch(String keyword) async {
     const apiKey = '5d85b804b65d01a8faf7acb5d95d8c76';
     final url = Uri.parse(
@@ -124,68 +126,35 @@ class _MapViewState extends State<MapView> {
     return Device.fromMap(res);
   }
 
-  Widget _deviceInfoPopup(BuildContext context) {
-    final device = selectedDevice;
-
-    return Positioned(
-      bottom: 100.0,
-      left: 20.0,
-      right: 20.0,
-      child: AnimatedOpacity(
-        opacity: 1.0,
-        duration: Duration(milliseconds: 200),
-        child: Container(
-          padding: EdgeInsets.all(16.0),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12.0),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black26,
-                blurRadius: 10.0,
-                offset: Offset(0, 4),
-              ),
-            ],
+  Future<void> _showDeviceInfoDialog(
+    BuildContext context, {
+    required Device device,
+    VoidCallback? onRent,
+    VoidCallback? onClose,
+    bool barrierDismissible = false,
+  }) {
+    return showGeneralDialog(
+      context: context,
+      barrierDismissible: barrierDismissible,
+      barrierLabel: 'DeviceInfo',
+      barrierColor: Colors.transparent,
+      transitionDuration: Duration(milliseconds: 180),
+      pageBuilder: (_, __, ___) {
+        return Center(
+          child: DeviceInfoDialog(
+            device: device,
+            onRent: onRent,
+            onClose: onClose,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              simpleText(
-                '배터리 잔량: ${device!.battery}%',
-                18.0, FontWeight.bold, Colors.black, TextAlign.start
-              ),
-              SizedBox(height: 6.0),
-              simpleText(
-                '예상 사용 시간: ${device.expectedUsage}분',
-                18.0, FontWeight.bold, Colors.black, TextAlign.start
-              ),
-              SizedBox(height: 6.0),
-              simpleText(
-                  '가격: 1분 당 ${device.price}원',
-                  18.0, FontWeight.bold, Colors.black, TextAlign.start
-              ),
-              SizedBox(height: 10.0),
-              Align(
-                alignment: Alignment.centerRight,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.redAccent,
-                    padding: EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      selectedDevice = null;
-                      selectedLatLng = null;
-                    });
-                  },
-                  child: Text('닫기'),
-                )
-              )
-            ],
-          ),
-        ),
-      ),
+        );
+      },
+      transitionBuilder: (context, anim, _, child) {
+        final curved = CurvedAnimation(parent: anim, curve: Curves.easeOutCubic);
+        return FadeTransition(
+          opacity: curved,
+          child: ScaleTransition(scale: Tween(begin: 0.96, end: 1.0).animate(curved), child: child),
+        );
+      },
     );
   }
 
@@ -212,7 +181,29 @@ class _MapViewState extends State<MapView> {
           zoomControlPosition: ControlPosition.bottomRight,
           markers: markers.toList(),
           onMarkerTap: (markerId, latLng, level) async {
+            if(_deviceInfoLoading) return;
+
+            setState(() {
+              _deviceInfoLoading = true;
+            });
+
             final device = await _getDeviceByMarkerId(markerId);
+
+            if(!context.mounted || device == null) return;
+
+            _showDeviceInfoDialog(
+                context,
+                device: device,
+                onRent: () {
+
+                },
+                onClose: () {
+                  setState(() {
+                    _deviceInfoLoading = false;
+                  });
+                }
+            );
+
             setState(() {
               selectedDevice = device;
               selectedLatLng = latLng;
@@ -220,9 +211,6 @@ class _MapViewState extends State<MapView> {
           },
           customOverlays: overlays.toList(),
         ),
-
-        if(selectedDevice != null && selectedLatLng != null)
-          _deviceInfoPopup(context),
 
         SafeArea(
           child: MapSearchBar(
@@ -279,6 +267,186 @@ class MapSearchBar extends StatelessWidget {
           contentPadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
         ),
       ),
+    );
+  }
+}
+
+class DeviceInfoDialog extends StatelessWidget {
+  final Device device;
+  final VoidCallback? onRent;
+  final VoidCallback? onClose;
+
+  const DeviceInfoDialog({
+    super.key,
+    required this.device,
+    this.onRent,
+    this.onClose,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+          width: 360.0,
+          margin: EdgeInsets.symmetric(horizontal: 16.0),
+          padding: EdgeInsets.symmetric(vertical: 12.0),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12.0),
+            boxShadow: [
+              BoxShadow(color: Colors.black26,
+                  blurRadius: 18.0,
+                  offset: Offset(0, 8)),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20.0, vertical: 6.0),
+                child: Row(
+                  children: [
+                    simpleText(
+                        '킥보드 정보',
+                        16.0, FontWeight.bold, Colors.black, TextAlign.start
+                    ),
+
+                    Spacer(),
+
+                    InkWell(
+                      borderRadius: BorderRadius.circular(20.0),
+                      onTap: () {
+                        Navigator.of(context).maybePop();
+                        onClose?.call();
+                      },
+                      child: Padding(
+                        padding: EdgeInsets.all(6.0),
+                        child: Icon(
+                          Icons.close, size: 20.0, color: Colors.black,),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              Container(
+                height: 96.0,
+                margin: EdgeInsets.symmetric(horizontal: 20.0, vertical: 6.0),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12.0),
+                  gradient: LinearGradient(
+                    colors: [Color(0xFFE6F1FF), Color(0xFFE7F8ED)],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                  ),
+                ),
+                child: Center(
+                  child: Icon(Icons.bolt, size: 48.0, color: Color(0xFF1E88E5)),
+                ),
+              ),
+
+              SizedBox(height: 8.0),
+
+              DeviceInfoRow(
+                icon: Icons.battery_full_rounded,
+                label: '배터리 잔량',
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: 120.0,
+                      height: 8.0,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(6.0),
+                        child: LinearProgressIndicator(
+                          value: (device.battery.clamp(0, 100)) / 100.0,
+                          backgroundColor: Color(0xFFE9EEF5),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 8.0),
+                    simpleText(
+                        '${device.battery}%',
+                        12.0, FontWeight.normal, Colors.black, TextAlign.start
+                    ),
+                  ],
+                ),
+              ),
+
+              divider(),
+
+              DeviceInfoRow(
+                icon: Icons.access_time_filled_rounded,
+                label: '예상 이용 시간',
+                trailingText: '${device.expectedUsage}분',
+              ),
+
+              divider(),
+
+              DeviceInfoRow(
+                  icon: Icons.attach_money_rounded,
+                  label: '기본 요금',
+                  trailingText: '₩${device.price}/분'
+              ),
+
+              divider(),
+
+              DeviceInfoRow(
+                icon: Icons.place_rounded,
+                label: '거리',
+                trailingText: '${device.dLat} - ${device.dLng}',
+              ),
+
+              SizedBox(height: 16.0),
+            ],
+          )
+      ),
+    );
+  }
+}
+
+class DeviceInfoRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String? trailingText;
+  final Widget? trailing;
+
+  const DeviceInfoRow(
+  {
+    super.key,
+    required this.icon,
+    required this.label,
+    this.trailingText,
+    this.trailing,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+      child: Row(
+        children: [
+          Icon(icon, size: 20.0, color: Colors.black),
+          SizedBox(width: 10.0),
+          Expanded(
+            child: simpleText(
+              label,
+              12.0, FontWeight.normal, Colors.black, TextAlign.start
+            ),
+          ),
+
+          if(trailing != null)
+            trailing!,
+
+          if(trailingText != null) ...[
+            simpleText(
+              trailingText!,
+              12.0, FontWeight.normal, Colors.black, TextAlign.start
+            ),
+          ]
+        ],
+      )
     );
   }
 }
