@@ -64,7 +64,7 @@ class _RewardState extends State<Reward> {
 
                   SizedBox(height: 32.0),
 
-                  _sectionTitle('마일리지 적립 방법'),
+                  sectionTitle('마일리지 적립 방법'),
                   SizedBox(height: 8.0),
                   _rewardMethod('헬맷 착용 주행', '주행 완료 시', '+50P', Colors.green, Icons.shield_outlined),
                   _rewardMethod('지정 주차 구역 반납', '올바른 주차 시', '+30P', Colors.blue, Icons.place_outlined),
@@ -72,7 +72,7 @@ class _RewardState extends State<Reward> {
 
                   SizedBox(height: 36.0),
 
-                  _sectionTitle('최근 적립 내역'),
+                  sectionTitle('최근 적립 내역'),
                   SizedBox(height: 8.0),
                   _recentAccrual('헬맷 착용 주행 완료', '1월 15일 오후 11:30', '+50P'),
                   _recentAccrual('지정 구역 주차 완료', '1월 15일 오후 11:25', '+30P'),
@@ -101,16 +101,6 @@ class _RewardState extends State<Reward> {
             ),
           )
         ]
-      ),
-    );
-  }
-
-  Widget _sectionTitle(String title) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: simpleText(
-        title,
-        24.0, FontWeight.bold, Colors.black, TextAlign.start
       ),
     );
   }

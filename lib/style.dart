@@ -53,3 +53,14 @@ Widget divider() {
     ),
   );
 }
+
+
+Widget sectionTitle(String title) {
+  return Align(
+    alignment: Alignment.centerLeft,
+    child: simpleText(
+        title,
+        24.0, FontWeight.bold, Colors.black, TextAlign.start
+    ),
+  );
+}
