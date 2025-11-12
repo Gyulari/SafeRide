@@ -14,10 +14,17 @@ class MapView extends StatefulWidget {
 class _MapViewState extends State<MapView> {
   late KakaoMapController mapController;
 
+  StreamSubscription<Position>? _positionStream;
+  bool _isGPSActive = false;
+
   final _searchC = TextEditingController();
 
   LatLng curCenter = LatLng(37.5665, 126.9780);
+  LatLng? curUserPos;
+  bool _hasCenteredToUser = false;
 
+  Set<Marker> deviceMarkers = {};
+  Set<Marker> curPosMarker = {};
   Set<Marker> markers = {};
   Set<CustomOverlay> overlays = {};
 
@@ -77,7 +84,8 @@ class _MapViewState extends State<MapView> {
     final markersList = await Future.wait(markersListAsync);
 
     setState(() {
-      markers = markersList.toSet();
+      deviceMarkers = markersList.toSet();
+      markers = {...deviceMarkers, ...curPosMarker};
     });
   }
 
@@ -126,13 +134,133 @@ class _MapViewState extends State<MapView> {
     return Device.fromMap(res);
   }
 
+  double _calculateDistance(
+      double uLat, double uLng,
+      double dLat, double dLng,
+  )
+  {
+    return Geolocator.distanceBetween(
+      uLat,
+      uLng,
+      dLat,
+      dLng,
+    );
+  }
+
+  void _startListeningLocation()  async {
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if(!mounted) return;
+
+    if(!serviceEnabled) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Activate GPS on options first')),
+      );
+      return;
+    }
+
+    LocationPermission permission = await Geolocator.checkPermission();
+
+    if(permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if(permission == LocationPermission.denied) {
+        throw Exception('Denied GPS permission');
+      }
+    }
+
+    if(permission == LocationPermission.deniedForever) {
+      throw Exception('GPS Permission is denied permanently.');
+    }
+
+    final locationSettings = LocationSettings(
+      accuracy: LocationAccuracy.bestForNavigation,
+      distanceFilter: 5,
+    );
+
+    _positionStream = Geolocator.getPositionStream(locationSettings: locationSettings)
+        .listen((Position position) {
+      setState(() {
+        curUserPos = LatLng(position.latitude, position.longitude);
+      });
+
+      _updateCurrentUserPosition(position);
+
+      if(!_hasCenteredToUser) {
+        mapController.setCenter(
+          LatLng(position.latitude, position.longitude)
+        );
+
+        _hasCenteredToUser = true;
+      }
+    });
+
+    setState(() {
+      _isGPSActive = true;
+    });
+  }
+
+  void _stopListeningLocation() {
+    _positionStream?.cancel();
+    _positionStream = null;
+
+    setState(() {
+      _isGPSActive = false;
+      curUserPos = null;
+    });
+  }
+
+  void _updateCurrentUserPosition(Position pos) async {
+    final latLng = LatLng(pos.latitude, pos.longitude);
+
+    mapController.setCenter(latLng);
+
+    final icon = await MarkerIcon.fromAsset('assets/icons/user_icon_pos.png');
+
+    setState(() {
+      final curPos = Marker(
+        markerId: 'userDot_${DateTime.now().millisecondsSinceEpoch}',
+        latLng: latLng,
+        icon: icon,
+        width: 48,
+        height: 48,
+      );
+
+      curPosMarker.clear();
+      curPosMarker.add(curPos);
+      markers = {...deviceMarkers, ...curPosMarker};
+    });
+  }
+
+  void _toggleGPS() {
+    if(_isGPSActive) {
+      _stopListeningLocation();
+      _removeCurPosMarker();
+
+      setState(() {
+        _hasCenteredToUser = false;
+      });
+    } else {
+      _startListeningLocation();
+    }
+  }
+
+  void _removeCurPosMarker() async {
+    setState(() {
+      curPosMarker.clear();
+      markers = {...deviceMarkers};
+    });
+
+    mapController.clearMarker(markerIds: markers.map((e) => e.markerId).toList());
+  }
+
   Future<void> _showDeviceInfoDialog(
     BuildContext context, {
     required Device device,
+    required double? distance,
     VoidCallback? onRent,
     VoidCallback? onClose,
     bool barrierDismissible = false,
-  }) {
+  })
+  {
     return showGeneralDialog(
       context: context,
       barrierDismissible: barrierDismissible,
@@ -143,6 +271,7 @@ class _MapViewState extends State<MapView> {
         return Center(
           child: DeviceInfoDialog(
             device: device,
+            distance: distance,
             onRent: onRent,
             onClose: onClose,
           ),
@@ -156,6 +285,12 @@ class _MapViewState extends State<MapView> {
         );
       },
     );
+  }
+
+  @override
+  void dispose() {
+    _stopListeningLocation();
+    super.dispose();
   }
 
   @override
@@ -191,17 +326,25 @@ class _MapViewState extends State<MapView> {
 
             if(!context.mounted || device == null) return;
 
-            _showDeviceInfoDialog(
-                context,
-                device: device,
-                onRent: () {
+            double? distance;
+            if(curUserPos != null) {
+              distance = _calculateDistance(curUserPos!.latitude, curUserPos!.longitude, device.dLat, device.dLng);
+            } else {
+              distance = null;
+            }
 
-                },
-                onClose: () {
-                  setState(() {
-                    _deviceInfoLoading = false;
-                  });
-                }
+            _showDeviceInfoDialog(
+              context,
+              device: device,
+              distance: distance,
+              onRent: () {
+
+              },
+              onClose: () {
+                setState(() {
+                  _deviceInfoLoading = false;
+                });
+              }
             );
 
             setState(() {
@@ -232,6 +375,20 @@ class _MapViewState extends State<MapView> {
             },
           ),
         ),
+
+        Positioned(
+          top: 75.0,
+          right: 16.0,
+          child: FloatingActionButton(
+            mini: true,
+            backgroundColor: Colors.white,
+            onPressed: _toggleGPS,
+            child: Icon(
+              _isGPSActive ? Icons.gps_fixed : Icons.gps_off,
+              color: _isGPSActive ? Colors.blueAccent : Colors.grey,
+            ),
+          )
+        )
       ],
     );
   }
@@ -273,12 +430,14 @@ class MapSearchBar extends StatelessWidget {
 
 class DeviceInfoDialog extends StatelessWidget {
   final Device device;
+  final double? distance;
   final VoidCallback? onRent;
   final VoidCallback? onClose;
 
   const DeviceInfoDialog({
     super.key,
     required this.device,
+    required this.distance,
     this.onRent,
     this.onClose,
   });
@@ -395,7 +554,7 @@ class DeviceInfoDialog extends StatelessWidget {
               DeviceInfoRow(
                 icon: Icons.place_rounded,
                 label: '거리',
-                trailingText: '${device.dLat} - ${device.dLng}',
+                trailingText: distance == null ? '- m' : '${(distance! / 1000 * 100).floorToDouble()/100}km',
               ),
 
               SizedBox(height: 16.0),
