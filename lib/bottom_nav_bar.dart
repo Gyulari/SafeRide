@@ -25,11 +25,6 @@ class BottomNavBar extends StatelessWidget {
           label: '홈',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.flash_on_outlined),
-          activeIcon: Icon(Icons.flash_on),
-          label: '대여',
-        ),
-        BottomNavigationBarItem(
           icon: Icon(Icons.attach_money_outlined),
           activeIcon: Icon(Icons.attach_money),
           label: '리워드',

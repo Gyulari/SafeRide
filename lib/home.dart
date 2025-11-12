@@ -1,6 +1,5 @@
 import 'package:saferide/app_import.dart';
 import 'package:saferide/map.dart';
-import 'package:saferide/rental.dart';
 import 'package:saferide/reward.dart';
 import 'package:saferide/use_history.dart';
 import 'package:saferide/my_page.dart';
@@ -19,7 +18,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final List<Widget> _screens = [
     MapView(),
-    Rental(),
     Reward(),
     UseHistory(),
     MyPage(),
@@ -32,7 +30,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Safe Ride')),
       body: Stack(
         children: [
           _screens[_selectedIndex],
