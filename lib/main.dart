@@ -1,4 +1,5 @@
 import 'package:saferide/app_import.dart';
+import 'package:saferide/guide.dart';
 import 'package:saferide/style.dart';
 import 'package:saferide/route_import.dart';
 import 'package:kakao_map_plugin/kakao_map_plugin.dart';
@@ -27,6 +28,7 @@ class SafeRide extends StatelessWidget {
         '/login': (_) => LoginScreen(),
         '/login/signup': (_) => SignupScreen(),
         '/home': (_) => HomeScreen(),
+        '/home/guide': (_) => GuideScreen(),
       },
       initialRoute: '/',
 
