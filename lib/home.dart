@@ -4,6 +4,7 @@ import 'package:saferide/reward.dart';
 import 'package:saferide/use_history.dart';
 import 'package:saferide/my_page.dart';
 import 'package:saferide/bottom_nav_bar.dart';
+import 'package:saferide/nav_stat.dart';
 
 class HomeScreen extends StatefulWidget{
   const HomeScreen({super.key});
@@ -14,8 +15,6 @@ class HomeScreen extends StatefulWidget{
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _selectedIndex = 0;
-
   final List<Widget> _screens = [
     MapView(),
     Reward(),
@@ -23,27 +22,26 @@ class _HomeScreenState extends State<HomeScreen> {
     MyPage(),
   ];
 
-  void _onNavItemTapped(int index) {
-    setState(() => _selectedIndex = index);
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
-        children: [
-          _screens[_selectedIndex],
-          Positioned(
-            bottom: 100.0,
-            left: 16.0,
-            right: 16.0,
-            child: Row(),
-          ),
-        ],
-      ),
-      bottomNavigationBar: BottomNavBar(
-        curIndex: _selectedIndex,
-        onTap: _onNavItemTapped,
+    return ChangeNotifierProvider(
+      create: (_) => NavState(),
+      child: Scaffold(
+        body: Consumer<NavState>(
+          builder: (context, navState, child) {
+            return _screens[navState.selectedIndex];
+          },
+        ),
+        bottomNavigationBar: Consumer<NavState>(
+          builder: (context, navState, child) {
+            return BottomNavBar(
+              curIndex: navState.selectedIndex,
+              onTap: (index) {
+                navState.setSelectedIndex(index);
+              }
+            );
+          },
+        ),
       ),
     );
   }
