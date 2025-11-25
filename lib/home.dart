@@ -4,7 +4,7 @@ import 'package:saferide/reward.dart';
 import 'package:saferide/use_history.dart';
 import 'package:saferide/my_page.dart';
 import 'package:saferide/bottom_nav_bar.dart';
-import 'package:saferide/nav_stat.dart';
+import 'package:saferide/provider.dart';
 
 class HomeScreen extends StatefulWidget{
   const HomeScreen({super.key});
@@ -15,12 +15,18 @@ class HomeScreen extends StatefulWidget{
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final List<Widget> _screens = [
-    MapView(),
-    Reward(),
-    UseHistory(),
-    MyPage(),
-  ];
+  late List<Widget> _screens;
+
+  @override
+  void initState() {
+    super.initState();
+    _screens = [
+      MapView(),
+      Reward(),
+      UseHistory(),
+      MyPage(),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {

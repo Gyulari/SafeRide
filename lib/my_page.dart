@@ -1,6 +1,6 @@
 import 'package:saferide/app_import.dart';
 import 'package:saferide/style.dart';
-import 'package:saferide/nav_stat.dart';
+import 'package:saferide/provider.dart';
 
 class MyPage extends StatefulWidget {
   const MyPage({super.key});
@@ -10,13 +10,13 @@ class MyPage extends StatefulWidget {
 }
 
 class _MyPageState extends State<MyPage> {
-  String userName = '김스마트';
-  String userEmail = 'smart@example.com';
   int historyCount = 0;
   int totalDistance = 0;
 
   @override
   Widget build(BuildContext context) {
+    final userState = context.watch<UserInfoState>();
+
     return Container(
       color: Colors.white,
       child: CustomScrollView(
@@ -40,7 +40,7 @@ class _MyPageState extends State<MyPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _profileCard(),
+                  _profileCard(userState.userName, userState.userEmail),
 
                   SizedBox(height: 20.0),
 
@@ -92,8 +92,14 @@ class _MyPageState extends State<MyPage> {
                           20.0, FontWeight.bold, Colors.red, TextAlign.center
                         ),
                       ),
-                      onTap: () {
-                        // Log out
+                      onTap: () async {
+                        await SupabaseManager.client.auth.signOut();
+
+                        if(!context.mounted) return;
+
+                        Navigator.pushNamedAndRemoveUntil(
+                          context, '/login', (route) => false
+                        );
                       }
                     ),
                   ),
@@ -110,7 +116,7 @@ class _MyPageState extends State<MyPage> {
     );
   }
 
-  Widget _profileCard() {
+  Widget _profileCard(String userName, String userEmail) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
       decoration: BoxDecoration(

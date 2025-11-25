@@ -202,10 +202,8 @@ class _MapViewState extends State<MapView> {
     _positionStream?.cancel();
     _positionStream = null;
 
-    setState(() {
-      _isGPSActive = false;
-      curUserPos = null;
-    });
+    _isGPSActive = false;
+    curUserPos = null;
   }
 
   void _updateCurrentUserPosition(Position pos) async {

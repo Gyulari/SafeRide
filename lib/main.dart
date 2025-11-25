@@ -1,5 +1,4 @@
 import 'package:saferide/app_import.dart';
-import 'package:saferide/guide.dart';
 import 'package:saferide/style.dart';
 import 'package:saferide/route_import.dart';
 import 'package:kakao_map_plugin/kakao_map_plugin.dart';
@@ -11,7 +10,16 @@ void main() async {
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
   await SupabaseManager.init();
-  runApp(const SafeRide());
+
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => NavState()),
+        ChangeNotifierProvider(create: (_) => UserInfoState()),
+      ],
+      child: const SafeRide(),
+    )
+  );
 }
 
 class SafeRide extends StatelessWidget {
