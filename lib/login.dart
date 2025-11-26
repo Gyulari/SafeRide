@@ -32,6 +32,13 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if(res.user != null){
+        await SupabaseManager.client
+            .from('user_mileages')
+            .upsert({
+              'user_id': res.user!.id,
+              'mileage': 0,
+            });
+
         if(!mounted) return;
 
         ScaffoldMessenger.of(context).showSnackBar(

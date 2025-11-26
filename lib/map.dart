@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:kakao_map_plugin/kakao_map_plugin.dart';
 import 'package:saferide/device.dart';
 import 'package:saferide/style.dart';
+import 'package:saferide/rental.dart';
 
 class MapView extends StatefulWidget {
   const MapView({super.key});
@@ -556,6 +557,35 @@ class DeviceInfoDialog extends StatelessWidget {
               ),
 
               SizedBox(height: 16.0),
+
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20.0),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      padding: EdgeInsets.symmetric(vertical: 14.0),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10.0),
+                      ),
+                      backgroundColor: Colors.blueAccent,
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).maybePop();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => RentalScreen(device: device),
+                        )
+                      );
+                    },
+                    child: simpleText(
+                      '대여하기',
+                      16.0, FontWeight.bold, Colors.white, TextAlign.center
+                    ),
+                  ),
+                ),
+              )
             ],
           )
       ),
