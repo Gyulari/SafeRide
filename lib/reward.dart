@@ -11,6 +11,8 @@ class Reward extends StatefulWidget {
 class _RewardState extends State<Reward> {
   int? mileage;
 
+  List<Map<String, dynamic>> recentMileageLogs = [];
+
   Future<void> fetchMileage() async {
     final user = SupabaseManager.client.auth.currentUser;
     if(user == null) return;
@@ -28,9 +30,36 @@ class _RewardState extends State<Reward> {
     });
   }
 
+  Future<void> fetchRecentMileageLogs() async {
+    final user = SupabaseManager.client.auth.currentUser;
+    if(user == null) return;
+
+    final rows = await SupabaseManager.client
+        .from('user_mileages_log')
+        .select()
+        .eq('user_id', user.id)
+        .order('updated_at', ascending: false)
+        .limit(20);
+
+    setState(() {
+      recentMileageLogs = List<Map<String, dynamic>>.from(rows);
+    });
+  }
+
+  String formatKoreanTime(DateTime dt) {
+    final hour = dt.hour;
+    final minute = dt.minute.toString().padLeft(2, '0');
+
+    final period = hour < 12 ? '오전' : '오후';
+    final displayHour = hour % 12 == 0 ? 12 : hour % 12;
+
+    return '${dt.year}년 ${dt.month}월 ${dt.day}일 $period $displayHour시 $minute분';
+  }
+
   @override
   void initState() {
     fetchMileage();
+    fetchRecentMileageLogs();
     super.initState();
   }
 
@@ -101,10 +130,20 @@ class _RewardState extends State<Reward> {
 
                   sectionTitle('최근 적립 내역'),
                   SizedBox(height: 8.0),
-                  _recentAccrual('헬맷 착용 주행 완료', '1월 15일 오후 11:30', '+50P'),
-                  _recentAccrual('지정 구역 주차 완료', '1월 15일 오후 11:25', '+30P'),
-                  _recentAccrual('안전 1일 주행 완료', '1월 15일 오후 11:25', '+20P'),
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: NeverScrollableScrollPhysics(),
+                    itemCount: recentMileageLogs.length,
+                    itemBuilder: (context, index) {
+                      final item = recentMileageLogs[index];
 
+                      final reason = item['reason'] as String;
+                      final mileage = item['mileage'] as int;
+                      final updatedAt = DateTime.parse(item['updated_at']).toLocal();
+                      
+                      return _recentAccrual(reason, formatKoreanTime(updatedAt), mileage);
+                    },
+                  ),
                   SizedBox(height: 36.0),
                 ],
               ),
@@ -166,7 +205,7 @@ class _RewardState extends State<Reward> {
     );
   }
 
-  Widget _recentAccrual(String title, String date, String point) {
+  Widget _recentAccrual(String title, String date, int point) {
     return Column(
       children: [
         Padding(
@@ -189,7 +228,7 @@ class _RewardState extends State<Reward> {
                 ],
               ),
               simpleText(
-                point,
+                '+ ${point}P',
                 20.0, FontWeight.bold, Colors.green, TextAlign.end
               ),
             ],
