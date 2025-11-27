@@ -1,5 +1,4 @@
 import 'package:saferide/app_import.dart';
-import 'package:saferide/map.dart';
 import 'package:saferide/map_integrated.dart';
 import 'package:saferide/reward.dart';
 import 'package:saferide/use_history.dart';

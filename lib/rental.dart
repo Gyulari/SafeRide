@@ -161,7 +161,7 @@ class _RentalScreenState extends State<RentalScreen> {
                   ),
                   onPressed: () {
                     Provider.of<RentalState>(context, listen: false)
-                      .startRental(device.dNumber, device.battery);
+                      .startRental(device.dNumber, device.battery, device.price);
 
                     Navigator.pushNamedAndRemoveUntil(
                       context,

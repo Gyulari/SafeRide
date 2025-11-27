@@ -1,4 +1,5 @@
 import 'package:saferide/app_import.dart';
+import 'package:saferide/driving_summary.dart';
 import 'package:saferide/style.dart';
 import 'package:saferide/provider.dart';
 
@@ -97,7 +98,21 @@ class DrivingStatusBarState extends State<DrivingStatusBar> {
                 backgroundColor: Colors.redAccent,
               ),
               onPressed: () {
-                widget.rentalState.endRental();
+                final rental = widget.rentalState;
+                final elapsed = DateTime.now().difference(rental.rentalStartTime!);
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => DrivingSummaryScreen(
+                      deviceNumber: rental.deviceNumber,
+                      elapsed: elapsed,
+                      charge: rental.charge,
+                    ),
+                  ),
+                ).then((_) {
+                  rental.endRental();
+                });
               },
               child: simpleText(
                 '주행 종료',

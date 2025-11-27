@@ -38,12 +38,14 @@ class RentalState extends ChangeNotifier {
   bool isRiding = false;
   int deviceNumber = 0;
   int battery = 0;
+  int charge = 0;
   DateTime? rentalStartTime;
 
-  void startRental(int deviceNumber, int battery) {
+  void startRental(int deviceNumber, int battery, int charge) {
     isRiding = true;
     this.deviceNumber = deviceNumber;
     this.battery = battery;
+    this.charge = charge;
     rentalStartTime = DateTime.now();
     notifyListeners();
   }
@@ -52,6 +54,7 @@ class RentalState extends ChangeNotifier {
     isRiding = false;
     deviceNumber = 0;
     battery = 0;
+    charge = 0;
     rentalStartTime = null;
     notifyListeners();
   }
