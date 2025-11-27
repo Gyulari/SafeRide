@@ -32,12 +32,20 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if(res.user != null){
-        await SupabaseManager.client
+        final mileageRow = await SupabaseManager.client
             .from('user_mileages')
-            .upsert({
-              'user_id': res.user!.id,
-              'mileage': 0,
-            });
+            .select('user_id')
+            .eq('user_id', res.user!.id)
+            .maybeSingle();
+
+        if(mileageRow == null) {
+          await SupabaseManager.client
+              .from('user_mileages')
+              .insert({
+                'user_id': res.user!.id,
+                'mileage': 0,
+              });
+        }
 
         if(!mounted) return;
 

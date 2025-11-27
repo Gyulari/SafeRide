@@ -9,7 +9,30 @@ class Reward extends StatefulWidget {
 }
 
 class _RewardState extends State<Reward> {
-  final int mileage = 0;
+  int? mileage;
+
+  Future<void> fetchMileage() async {
+    final user = SupabaseManager.client.auth.currentUser;
+    if(user == null) return;
+
+    final res = await SupabaseManager.client
+        .from('user_mileages')
+        .select('mileage')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+    if(res == null) return;
+
+    setState(() {
+      mileage = res['mileage'] as int;
+    });
+  }
+
+  @override
+  void initState() {
+    fetchMileage();
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,10 +67,12 @@ class _RewardState extends State<Reward> {
                     ),
                     child: Column(
                       children: [
-                        simpleText(
-                          '${mileage}P',
-                          42.0, FontWeight.bold, Colors.white, TextAlign.center
-                        ),
+                        mileage == null
+                          ? CircularProgressIndicator(color: Colors.white)
+                          : simpleText(
+                              '${mileage}P',
+                              42.0, FontWeight.bold, Colors.white, TextAlign.center
+                            ),
                         SizedBox(height: 6.0),
                         simpleText(
                           '보유 마일리지',
@@ -55,7 +80,9 @@ class _RewardState extends State<Reward> {
                         ),
                         SizedBox(height: 4.0),
                         simpleText(
-                          '₩1250 상당 (1P = 1₩)',
+                          mileage == null
+                            ? '-'
+                            : '₩$mileage 상당 (1P = 1₩)',
                           18.0, FontWeight.bold, Colors.white70, TextAlign.center
                         ),
                       ],
@@ -79,23 +106,6 @@ class _RewardState extends State<Reward> {
                   _recentAccrual('안전 1일 주행 완료', '1월 15일 오후 11:25', '+20P'),
 
                   SizedBox(height: 36.0),
-
-                  SizedBox(
-                    height: 50.0,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.amber[700],
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10.0),
-                        ),
-                      ),
-                      onPressed: () {},
-                      child: simpleText(
-                        '마일리지 사용하기',
-                        20.0, FontWeight.bold, Colors.white, TextAlign.center
-                      ),
-                    ),
-                  )
                 ],
               ),
             ),

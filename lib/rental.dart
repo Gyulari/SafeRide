@@ -29,12 +29,15 @@ class _RentalScreenState extends State<RentalScreen> {
   int _checkingSeconds = 3;
 
   int finalCharge = 0;
+  int? curMileage;
+  int useMileage = 0;
   bool isUsingMileage = false;
 
   @override
   void initState() {
     super.initState();
 
+    _fetchMileage();
     device = widget.device;
   }
 
@@ -43,6 +46,35 @@ class _RentalScreenState extends State<RentalScreen> {
     _timer?.cancel();
     _cameraController?.dispose();
     super.dispose();
+  }
+
+  Future<void> _fetchMileage() async {
+    final user = SupabaseManager.client.auth.currentUser;
+    if(user == null) return;
+
+    final res = await SupabaseManager.client
+        .from('user_mileages')
+        .select('mileage')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+    if(res == null) return;
+
+    setState(() {
+      curMileage = res['mileage'] as int;
+    });
+  }
+
+  Future<void> _updateMileage() async {
+    if(isUsingMileage){
+      final user = SupabaseManager.client.auth.currentUser;
+      if(user == null) return;
+
+      await SupabaseManager.client
+          .from('user_mileages')
+          .update({'mileage': (curMileage! - useMileage)})
+          .eq('user_id', user.id);
+    }
   }
 
   Future<void> _startHelmetCheck() async {
@@ -119,8 +151,12 @@ class _RentalScreenState extends State<RentalScreen> {
   @override
   Widget build(BuildContext context) {
     finalCharge = device.price * 10
-        - ((hcStatus == HelmetCheckStatus.success) ? 200 : 0)
-        - (isUsingMileage ? 1000 : 0);
+        - ((hcStatus == HelmetCheckStatus.success) ? 200 : 0);
+
+    if(isUsingMileage) {
+      useMileage = (curMileage! >= finalCharge) ? finalCharge : curMileage!;
+      finalCharge -= useMileage;
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -162,6 +198,8 @@ class _RentalScreenState extends State<RentalScreen> {
                   onPressed: () {
                     Provider.of<RentalState>(context, listen: false)
                       .startRental(device.dNumber, device.battery, device.price);
+
+                    _updateMileage();
 
                     Navigator.pushNamedAndRemoveUntil(
                       context,
@@ -519,8 +557,8 @@ class _RentalScreenState extends State<RentalScreen> {
                     SizedBox(height: 2.0),
                     simpleText(
                       isUsingMileage
-                        ? '보유 : 150P'
-                        : '보유 : 150P | 필요 : ${NumberFormat('#,###').format(finalCharge)}P',
+                        ? '보유 : ${(curMileage! - useMileage)}P'
+                        : '보유 : ${curMileage}P | 필요 : ${NumberFormat('#,###').format(finalCharge)}P',
                       12.0, FontWeight.normal, Colors.grey, TextAlign.start
                     ),
                   ],
