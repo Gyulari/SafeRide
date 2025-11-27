@@ -11,7 +11,49 @@ class MyPage extends StatefulWidget {
 
 class _MyPageState extends State<MyPage> {
   int historyCount = 0;
-  int totalDistance = 0;
+  double totalDistance = 0;
+
+  bool fetchLoading = false;
+
+  Future<void> fetchUserRecord() async {
+    setState(() {
+      fetchLoading = true;
+    });
+
+    final user = SupabaseManager.client.auth.currentUser;
+
+    if(user == null){
+      setState(() {
+        fetchLoading = false;
+      });
+      return;
+    }
+
+    final res = await SupabaseManager.client
+        .from('user_record')
+        .select()
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+    if(res == null) {
+      setState(() {
+        fetchLoading = false;
+      });
+      return;
+    };
+
+    setState(() {
+      historyCount = res['total_count'] as int;
+      totalDistance = res['total_distance'] as double;
+      fetchLoading = false;
+    });
+  }
+
+  @override
+  void initState() {
+    fetchUserRecord();
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,8 +89,8 @@ class _MyPageState extends State<MyPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _usageCard('$historyCount', '총 이용 횟수', Colors.blue[50]!, Colors.blue),
-                      _usageCard('${totalDistance}km', '총 주행 거리', Colors.green[50]!, Colors.green),
+                      _usageCard('$historyCount', '총 이용 횟수', Colors.blue[50]!, Colors.blue, fetchLoading),
+                      _usageCard('${totalDistance.toStringAsFixed(2)}km', '총 주행 거리', Colors.green[50]!, Colors.green, fetchLoading),
                     ],
                   ),
 
@@ -170,7 +212,7 @@ class _MyPageState extends State<MyPage> {
     );
   }
 
-  Widget _usageCard(String value, String label, Color backgroundColor, Color fontColor) {
+  Widget _usageCard(String value, String label, Color backgroundColor, Color fontColor, bool isFetching) {
     return Expanded(
       child: Container(
         margin: EdgeInsets.symmetric(horizontal: 4.0),
@@ -182,7 +224,7 @@ class _MyPageState extends State<MyPage> {
         child: Column(
           children: [
             simpleText(
-              value,
+              isFetching ? '-' : value,
               24.0, FontWeight.bold, fontColor, TextAlign.center
             ),
             SizedBox(height: 4.0),

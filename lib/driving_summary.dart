@@ -73,10 +73,63 @@ class DrivingSummaryScreen extends StatelessWidget {
     return resultString;
   }
 
+  List<String> _estimatedResultList(List<bool> estimated) {
+    List<String> resultList = [];
+
+    if(estimated[0]) resultList.add('헬멧 착용');
+    if(estimated[1]) resultList.add('올바른 주차');
+    if(estimated[2]) resultList.add('안전 주행');
+
+    return resultList;
+  }
+
+  Future<void> _uploadUseHistory(double distance, int charge, int mileage, List<String> compliance) async {
+    final user = SupabaseManager.client.auth.currentUser;
+    if(user == null) return;
+
+    await SupabaseManager.client
+        .from('user_use_history')
+        .insert({
+          'user_id': user.id,
+          'elapsed': elapsed.toString(),
+          'distance': distance,
+          'charge': charge,
+          'mileage': mileage,
+          'compliance': compliance,
+        });
+  }
+
+  Future<void> _updateUserRecord(double distance, int mileage) async {
+    final user = SupabaseManager.client.auth.currentUser;
+    if(user == null) return;
+
+    final record = await SupabaseManager.client
+        .from('user_record')
+        .select()
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+    if(record == null) return;
+
+    final currentCount = record['total_count'] as int;
+    final currentDistance = double.parse(record['total_distance'].toString());
+    final currentMileage = record['accumulated_mileage'] as int;
+
+    await SupabaseManager.client
+        .from('user_record')
+        .update({
+          'total_count': currentCount + 1,
+          'total_distance': currentDistance + distance,
+          'accumulated_mileage': currentMileage + mileage,
+        })
+        .eq('user_id', user.id);
+  }
+
   @override
   Widget build(BuildContext context) {
     final seconds = elapsed.inSeconds;
-    final estimateMeters = seconds * 2.5;
+    // final estimateMeters = seconds * 2.5;
+    final estimateMeters = seconds * 12.5; // For Test
     final estimatedKm = estimateMeters / 1000;
 
     final minutes = (seconds / 60).ceil();
@@ -310,6 +363,18 @@ class DrivingSummaryScreen extends StatelessWidget {
                   ),
                 ),
                 onPressed: () {
+                  _uploadUseHistory(
+                    estimatedKm,
+                    (baseCharge > 200) ? baseCharge - 200 : 0,
+                    (elapsed.inMinutes >= 5) ? (estimatedRiding[0] ? 50 : 0) + (estimatedRiding[1] ? 30 : 0) + (estimatedRiding[2] ? 20 : 0) : 0,
+                    _estimatedResultList(estimatedRiding),
+                  );
+
+                  _updateUserRecord(
+                    estimatedKm,
+                    (elapsed.inMinutes >= 5) ? (estimatedRiding[0] ? 50 : 0) + (estimatedRiding[1] ? 30 : 0) + (estimatedRiding[2] ? 20 : 0) : 0,
+                  );
+
                   if(elapsed.inMinutes >= 5){
                     _updateMileage(estimatedRiding);
                   }

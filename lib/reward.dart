@@ -13,6 +13,8 @@ class _RewardState extends State<Reward> {
 
   List<Map<String, dynamic>> recentMileageLogs = [];
 
+  bool fetchLoading = false;
+
   Future<void> fetchMileage() async {
     final user = SupabaseManager.client.auth.currentUser;
     if(user == null) return;
@@ -31,8 +33,18 @@ class _RewardState extends State<Reward> {
   }
 
   Future<void> fetchRecentMileageLogs() async {
+    setState(() {
+      fetchLoading = true;
+    });
+
     final user = SupabaseManager.client.auth.currentUser;
-    if(user == null) return;
+
+    if(user == null) {
+      setState(() {
+        fetchLoading = false;
+      });
+      return;
+    }
 
     final rows = await SupabaseManager.client
         .from('user_mileages_log')
@@ -43,6 +55,7 @@ class _RewardState extends State<Reward> {
 
     setState(() {
       recentMileageLogs = List<Map<String, dynamic>>.from(rows);
+      fetchLoading = false;
     });
   }
 
@@ -130,20 +143,36 @@ class _RewardState extends State<Reward> {
 
                   sectionTitle('최근 적립 내역'),
                   SizedBox(height: 8.0),
-                  ListView.builder(
-                    shrinkWrap: true,
-                    physics: NeverScrollableScrollPhysics(),
-                    itemCount: recentMileageLogs.length,
-                    itemBuilder: (context, index) {
-                      final item = recentMileageLogs[index];
 
-                      final reason = item['reason'] as String;
-                      final mileage = item['mileage'] as int;
-                      final updatedAt = DateTime.parse(item['updated_at']).toLocal();
-                      
-                      return _recentAccrual(reason, formatKoreanTime(updatedAt), mileage);
-                    },
-                  ),
+                  if(fetchLoading)
+                    Center(
+                      child: CircularProgressIndicator(color: Colors.blueAccent),
+                    )
+                  else
+                    if(recentMileageLogs.isEmpty)
+                      Padding(
+                        padding: EdgeInsets.symmetric(vertical: 20.0),
+                        child: simpleText(
+                          '최근 이용 내역이 없습니다',
+                          18.0, FontWeight.w500, Colors.grey, TextAlign.start
+                        ),
+                      )
+                    else
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: NeverScrollableScrollPhysics(),
+                        itemCount: recentMileageLogs.length,
+                        itemBuilder: (context, index) {
+                          final item = recentMileageLogs[index];
+
+                          final reason = item['reason'] as String;
+                          final mileage = item['mileage'] as int;
+                          final updatedAt = DateTime.parse(item['updated_at']).toLocal();
+
+                          return _recentAccrual(reason, formatKoreanTime(updatedAt), mileage);
+                        },
+                      ),
+
                   SizedBox(height: 36.0),
                 ],
               ),

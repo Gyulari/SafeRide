@@ -38,12 +38,29 @@ class _LoginScreenState extends State<LoginScreen> {
             .eq('user_id', res.user!.id)
             .maybeSingle();
 
+        final recordRow = await SupabaseManager.client
+            .from('user_record')
+            .select('user_id')
+            .eq('user_id', res.user!.id)
+            .maybeSingle();
+
         if(mileageRow == null) {
           await SupabaseManager.client
               .from('user_mileages')
               .insert({
                 'user_id': res.user!.id,
                 'mileage': 0,
+              });
+        }
+
+        if(recordRow == null) {
+          await SupabaseManager.client
+              .from('user_record')
+              .insert({
+                'user_id': res.user!.id,
+                'total_count': 0,
+                'total_distance': 0.0,
+                'accumulated_mileage': 0,
               });
         }
 

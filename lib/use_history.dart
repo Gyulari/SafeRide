@@ -1,5 +1,6 @@
 import 'package:saferide/app_import.dart';
 import 'package:saferide/style.dart';
+import 'package:intl/intl.dart';
 
 class UseHistory extends StatefulWidget {
   const UseHistory({super.key});
@@ -9,9 +10,91 @@ class UseHistory extends StatefulWidget {
 }
 
 class _UseHistoryState extends State<UseHistory> {
-  final int historyCount = 0;
-  final int totalDistance = 0;
-  final int earnedMileage = 0;
+  int historyCount = 0;
+  double totalDistance = 0;
+  int accumulatedMileage = 0;
+
+  List<Map<String, dynamic>> recentUseHistory = [];
+
+  bool fetchLoading = false;
+
+  Future<void> fetchUseHistoryRecord() async {
+    setState(() {
+      fetchLoading = true;
+    });
+
+    final user = SupabaseManager.client.auth.currentUser;
+    if(user == null) {
+      setState(() {
+        fetchLoading = false;
+      });
+      return;
+    }
+
+    final res = await SupabaseManager.client
+        .from('user_record')
+        .select()
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+    if(res == null){
+      setState(() {
+        fetchLoading = false;
+      });
+      return;
+    }
+
+    setState(() {
+      historyCount = res['total_count'] as int;
+      totalDistance = res['total_distance'] as double;
+      accumulatedMileage = res['accumulated_mileage'] as int;
+      fetchLoading = false;
+    });
+  }
+
+  Future<void> fetchUseHistory() async {
+    setState(() {
+      fetchLoading = true;
+    });
+
+    final user = SupabaseManager.client.auth.currentUser;
+
+    if(user == null) {
+      setState(() {
+        fetchLoading = false;
+      });
+      return;
+    }
+
+    final rows = await SupabaseManager.client
+        .from('user_use_history')
+        .select()
+        .eq('user_id', user.id)
+        .order('created_at', ascending: false)
+        .limit(20);
+
+    setState(() {
+      recentUseHistory = List<Map<String, dynamic>>.from(rows);
+      fetchLoading = false;
+    });
+  }
+
+  String formatKoreanTime(DateTime dt) {
+    final hour = dt.hour;
+    final minute = dt.minute.toString().padLeft(2, '0');
+
+    final period = hour < 12 ? '오전' : '오후';
+    final displayHour = hour % 12 == 0 ? 12 : hour % 12;
+
+    return '${dt.year}년 ${dt.month}월 ${dt.day}일 $period $displayHour시 $minute분';
+  }
+
+  @override
+  void initState() {
+    fetchUseHistoryRecord();
+    fetchUseHistory();
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,44 +124,49 @@ class _UseHistoryState extends State<UseHistory> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        _summaryCard('$historyCount', '총 이용', Colors.blue[50]!, Colors.blue),
-                        _summaryCard('${totalDistance}km', '총 거리', Colors.green[50]!, Colors.green),
-                        _summaryCard('${earnedMileage}P', '적립 마일리지', Colors.amber[50]!, Colors.amber[700]!),
+                        _summaryCard('$historyCount', '총 이용', Colors.blue[50]!, Colors.blue, fetchLoading),
+                        _summaryCard('${totalDistance.toStringAsFixed(2)}km', '총 거리', Colors.green[50]!, Colors.green, fetchLoading),
+                        _summaryCard('${accumulatedMileage}P', '적립 마일리지', Colors.amber[50]!, Colors.amber[700]!, fetchLoading),
                       ],
                     ),
 
                     SizedBox(height: 30.0),
                     sectionTitle('최근 이용 내역'),
-                    SizedBox(height: 12.0),
+                    SizedBox(height: 8.0),
 
-                    _recentUsage(
-                      date: '11월 11일 오전 07:45 (34분)',
-                      distance: '7.8km',
-                      fee: '₩5,590',
-                      tags: ['헬맷 착용', '올바른 주차'],
-                      mileage: '+80 마일리지 적립',
-                    ),
-                    _recentUsage(
-                      date: '11월 10일 오전 10:30 (39분)',
-                      distance: '6.1km',
-                      fee: '₩5,070',
-                      tags: ['헬맷 착용', '안전 주행', '올바른 주차'],
-                      mileage: '+100 마일리지 적립',
-                    ),
-                    _recentUsage(
-                      date: '11월 9일 오후 04:10 (39분)',
-                      distance: '5.9km',
-                      fee: '₩5,070',
-                      tags: ['안전 주행', '올바른 주차'],
-                      mileage: '+50 마일리지 적립',
-                    ),
-                    _recentUsage(
-                      date: '11월 5일 오전 07:50 (36분)',
-                      distance: '6.2km',
-                      fee: '₩4,680',
-                      tags: ['헬맷 착용', '안전 주행', '올바른 주차'],
-                      mileage: '+100 마일리지 적립',
-                    ),
+                    if(fetchLoading)
+                      Center(
+                        child: CircularProgressIndicator(color: Colors.blueAccent),
+                      )
+                    else
+                      if(recentUseHistory.isEmpty)
+                        Padding(
+                          padding: EdgeInsets.symmetric(vertical: 20.0),
+                          child: simpleText(
+                            '최근 이용 내역이 없습니다',
+                            18.0, FontWeight.w500, Colors.grey, TextAlign.start
+                          ),
+                        )
+                      else
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: NeverScrollableScrollPhysics(),
+                          itemCount: recentUseHistory.length,
+                          itemBuilder: (context, index) {
+                            final item = recentUseHistory[index];
+                            final createdAt = DateTime.parse(item['created_at']).toLocal();
+                            final elapsed = int.parse(item['elapsed'].split(':')[1]);
+
+                            return _recentUsage(
+                              date: '${formatKoreanTime(createdAt)} (약 $elapsed분)',
+                              distance: '${item['distance'].toStringAsFixed(2)}km',
+                              fee: '₩${NumberFormat('#,###').format(item['charge'])}',
+                              tags: List<String>.from(item['compliance']),
+                              mileage: '+${item['mileage']} 마일리지 적립'
+                            );
+                          },
+                        ),
+                    SizedBox(height: 36.0),
                   ],
                 ),
               ),
@@ -88,7 +176,7 @@ class _UseHistoryState extends State<UseHistory> {
     );
   }
 
-  Widget _summaryCard(String value, String label, Color backgroundColor, Color labelColor) {
+  Widget _summaryCard(String value, String label, Color backgroundColor, Color labelColor, bool isFetching) {
     return Expanded(
       child: Container(
         margin: EdgeInsets.symmetric(horizontal: 8.0),
@@ -100,7 +188,7 @@ class _UseHistoryState extends State<UseHistory> {
         child: Column(
           children: [
             simpleText(
-              value,
+              (isFetching) ? '-' : value,
               32.0, FontWeight.bold, labelColor, TextAlign.center
             ),
             SizedBox(height: 6.0),
