@@ -1,6 +1,7 @@
 import 'package:saferide/app_import.dart';
 import 'package:saferide/style.dart';
 import 'package:intl/intl.dart';
+import 'package:saferide/provider.dart';
 
 enum HelmetCheckStatus {
   idle,
@@ -159,6 +160,9 @@ class _RentalScreenState extends State<RentalScreen> {
                     backgroundColor: Colors.blueAccent,
                   ),
                   onPressed: () {
+                    Provider.of<RentalState>(context, listen: false)
+                      .startRental(device.dNumber, device.battery);
+
                     Navigator.pushNamedAndRemoveUntil(
                       context,
                       '/home',

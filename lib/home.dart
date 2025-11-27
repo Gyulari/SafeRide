@@ -1,5 +1,6 @@
 import 'package:saferide/app_import.dart';
 import 'package:saferide/map.dart';
+import 'package:saferide/map_integrated.dart';
 import 'package:saferide/reward.dart';
 import 'package:saferide/use_history.dart';
 import 'package:saferide/my_page.dart';
@@ -15,17 +16,9 @@ class HomeScreen extends StatefulWidget{
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late List<Widget> _screens;
-
   @override
   void initState() {
     super.initState();
-    _screens = [
-      MapView(),
-      Reward(),
-      UseHistory(),
-      MyPage(),
-    ];
   }
 
   @override
@@ -33,9 +26,18 @@ class _HomeScreenState extends State<HomeScreen> {
     return ChangeNotifierProvider(
       create: (_) => NavState(),
       child: Scaffold(
-        body: Consumer<NavState>(
-          builder: (context, navState, child) {
-            return _screens[navState.selectedIndex];
+        body: Consumer2<NavState, RentalState>(
+          builder: (context, navState, rentalState, child) {
+            if(navState.selectedIndex == 0) {
+              return MapIntegrated(rentalState: rentalState);
+            }
+
+            return [
+              SizedBox(),
+              Reward(),
+              UseHistory(),
+              MyPage()
+            ][navState.selectedIndex];
           },
         ),
         bottomNavigationBar: Consumer<NavState>(

@@ -33,3 +33,26 @@ class UserInfoState extends ChangeNotifier {
     notifyListeners();
   }
 }
+
+class RentalState extends ChangeNotifier {
+  bool isRiding = false;
+  int deviceNumber = 0;
+  int battery = 0;
+  DateTime? rentalStartTime;
+
+  void startRental(int deviceNumber, int battery) {
+    isRiding = true;
+    this.deviceNumber = deviceNumber;
+    this.battery = battery;
+    rentalStartTime = DateTime.now();
+    notifyListeners();
+  }
+
+  void endRental() {
+    isRiding = false;
+    deviceNumber = 0;
+    battery = 0;
+    rentalStartTime = null;
+    notifyListeners();
+  }
+}

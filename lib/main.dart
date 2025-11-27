@@ -16,6 +16,7 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => NavState()),
         ChangeNotifierProvider(create: (_) => UserInfoState()),
+        ChangeNotifierProvider(create: (_) => RentalState()),
       ],
       child: const SafeRide(),
     )
