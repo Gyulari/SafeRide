@@ -116,7 +116,9 @@ class _MyPageState extends State<MyPage> {
                   _menuItem(
                     icon: Icons.support_agent,
                     text: '고객 지원',
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.of(context).pushNamed('/home/support');
+                    },
                   ),
 
                   SizedBox(height: 10.0),
