@@ -1,4 +1,5 @@
 import 'package:saferide/app_import.dart';
+import 'package:kakao_map_plugin/kakao_map_plugin.dart';
 
 class NavState extends ChangeNotifier {
   int _selectedIndex = 0;
@@ -36,22 +37,45 @@ class UserInfoState extends ChangeNotifier {
 
 class RentalState extends ChangeNotifier {
   bool isRiding = false;
+
   int deviceNumber = 0;
   int battery = 0;
   int charge = 0;
   DateTime? rentalStartTime;
 
-  void startRental(int deviceNumber, int battery, int charge) {
-    isRiding = true;
+  bool isSelectingDestination = false;
+  LatLng? destination;
+  List<LatLng> routePath = [];
+
+  void startDestinationSelection(int deviceNumber, int battery, int charge) {
+    isSelectingDestination = true;
+    isRiding = false;
+    destination = null;
+    routePath.clear();
     this.deviceNumber = deviceNumber;
     this.battery = battery;
     this.charge = charge;
+    notifyListeners();
+  }
+
+  void setDestination(LatLng dest) {
+    destination = dest;
+    isSelectingDestination = false;
+    isRiding = true;
     rentalStartTime = DateTime.now();
+    notifyListeners();
+  }
+
+  void addRoutePoint(LatLng point) {
+    routePath.add(point);
     notifyListeners();
   }
 
   void endRental() {
     isRiding = false;
+    isSelectingDestination = false;
+    destination = null;
+    routePath.clear();
     deviceNumber = 0;
     battery = 0;
     charge = 0;

@@ -197,7 +197,7 @@ class _RentalScreenState extends State<RentalScreen> {
                   ),
                   onPressed: () {
                     Provider.of<RentalState>(context, listen: false)
-                      .startRental(device.dNumber, device.battery, device.price);
+                      .startDestinationSelection(device.dNumber, device.battery, device.price);
 
                     _updateMileage();
 

@@ -1,9 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:saferide/app_import.dart';
 import 'package:http/http.dart' as http;
 import 'package:kakao_map_plugin/kakao_map_plugin.dart';
 import 'package:saferide/device.dart';
 import 'package:saferide/style.dart';
 import 'package:saferide/rental.dart';
+import 'package:saferide/provider.dart';
 
 class MapView extends StatefulWidget {
   const MapView({super.key});
@@ -18,6 +20,8 @@ class _MapViewState extends State<MapView> {
   StreamSubscription<Position>? _positionStream;
   bool _isGPSActive = false;
 
+  bool isRiding = false;
+
   final _searchC = TextEditingController();
 
   LatLng curCenter = LatLng(37.5665, 126.9780);
@@ -26,6 +30,7 @@ class _MapViewState extends State<MapView> {
 
   Set<Marker> deviceMarkers = {};
   Set<Marker> curPosMarker = {};
+  Set<Marker> destinationMarker = {};
   Set<Marker> markers = {};
   Set<CustomOverlay> overlays = {};
 
@@ -58,7 +63,9 @@ class _MapViewState extends State<MapView> {
     }
   }
 
-  Future<void> _loadDeviceMarkers(LatLngBounds bounds) async {
+  Future<void> _loadDeviceMarkers(LatLngBounds bounds, bool isRiding) async {
+    if(isRiding) return;
+
     final deviceData = await fetchDevicesInBounds(bounds);
 
     final markersListAsync = deviceData.map((device) async {
@@ -90,7 +97,9 @@ class _MapViewState extends State<MapView> {
     });
   }
 
-  Future<void> _loadDeviceBatteryInfo(LatLngBounds bounds) async {
+  Future<void> _loadDeviceBatteryInfo(LatLngBounds bounds, bool isRiding) async {
+    if(isRiding) return;
+
     final deviceData = await fetchDevicesInBounds(bounds);
 
     final overlaysListAsync = deviceData.map((device) async {
@@ -294,19 +303,21 @@ class _MapViewState extends State<MapView> {
 
   @override
   Widget build(BuildContext context) {
+    final rentalState = Provider.of<RentalState>(context);
+
     return Stack(
       children: [
         KakaoMap(
           onMapCreated: ((controller) async {
             mapController = controller;
             final bounds = await mapController.getBounds();
-            await _loadDeviceMarkers(bounds);
-            await _loadDeviceBatteryInfo(bounds);
+            await _loadDeviceMarkers(bounds, rentalState.isRiding);
+            await _loadDeviceBatteryInfo(bounds, rentalState.isRiding);
           }),
           onCameraIdle: (LatLng center, int zoomLevel) {
             mapController.getBounds().then((bounds) {
-              _loadDeviceMarkers(bounds);
-              _loadDeviceBatteryInfo(bounds);
+              _loadDeviceMarkers(bounds, rentalState.isRiding);
+              _loadDeviceBatteryInfo(bounds, rentalState.isRiding);
             });
           },
           center: curCenter,
@@ -387,7 +398,56 @@ class _MapViewState extends State<MapView> {
               color: _isGPSActive ? Colors.blueAccent : Colors.grey,
             ),
           )
-        )
+        ),
+
+        if(rentalState.isSelectingDestination)
+          Center(
+            child: Icon(Icons.location_on, size: 48.0, color: Colors.red),
+          ),
+
+        if(rentalState.isSelectingDestination)
+          Positioned(
+            bottom: 40.0,
+            left: 20.0,
+            right: 20.0,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12.0),
+                ),
+                padding: EdgeInsets.symmetric(vertical: 16.0),
+              ),
+              onPressed: () async {
+                isRiding = true;
+                final center = await mapController.getCenter();
+
+                rentalState.setDestination(center);
+
+                final icon = await MarkerIcon.fromAsset('assets/icons/destination_icon_pos.png');
+                final destinationPos = Marker(
+                  markerId: 'destination',
+                  latLng: center,
+                  icon: icon,
+                  width: 48,
+                  height: 48,
+                );
+
+                destinationMarker.add(destinationPos);
+                markers = {...destinationMarker, ...curPosMarker};
+
+                if(!context.mounted) return;
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('목적지가 설정되었습니다.')),
+                );
+              },
+              child: simpleText(
+                '목적지 설정',
+                18.0, FontWeight.bold, Colors.white, TextAlign.center
+              ),
+            ),
+          ),
       ],
     );
   }
