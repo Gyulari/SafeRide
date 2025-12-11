@@ -101,11 +101,15 @@ class _MyPageState extends State<MyPage> {
                       context.read<NavState>().setSelectedIndex(2);
                     }
                   ),
+                  /*
                   _menuItem(
                     icon: Icons.payment,
                     text: '결제 기록',
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.of(context).pushNamed('/home/payment_history');
+                    },
                   ),
+                  */
                   _menuItem(
                     icon: Icons.info_outline,
                     text: '이용 안내',

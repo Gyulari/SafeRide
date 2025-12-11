@@ -4,3 +4,4 @@ export 'package:saferide/home.dart';
 export 'package:saferide/guide.dart';
 export 'package:saferide/provider.dart';
 export 'package:saferide/support.dart';
+export 'package:saferide/payment_history.dart';
