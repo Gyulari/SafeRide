@@ -6,12 +6,14 @@ class DrivingSummaryScreen extends StatelessWidget {
   final int deviceNumber;
   final Duration elapsed;
   final int charge;
+  final bool isCouple;
 
   const DrivingSummaryScreen({
     super.key,
     required this.deviceNumber,
     required this.elapsed,
     required this.charge,
+    required this.isCouple,
   });
 
   String formatDuration(Duration d) {
@@ -308,6 +310,23 @@ class DrivingSummaryScreen extends StatelessWidget {
 
                       SizedBox(height: 8.0),
 
+                      if(isCouple)
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            simpleText(
+                              '커플/가족 요금 할인',
+                              18.0, FontWeight.normal, Colors.green, TextAlign.start
+                            ),
+                            simpleText(
+                              '- ₩${formatter.format(baseCharge/2)}',
+                              18.0, FontWeight.normal, Colors.green, TextAlign.end
+                            ),
+                          ],
+                        ),
+
+                      SizedBox(height: 8.0),
+
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -334,9 +353,13 @@ class DrivingSummaryScreen extends StatelessWidget {
                             20.0, FontWeight.bold, Colors.black, TextAlign.start
                           ),
                           simpleText(
-                            (baseCharge - 200 > 0)
-                              ? '₩${formatter.format(baseCharge - 200)}'
-                              : '₩0',
+                            isCouple
+                              ? (baseCharge / 2 - 200 > 0)
+                                ? '₩${formatter.format(baseCharge / 2 - 200)}'
+                                : '₩0'
+                              : (baseCharge - 200 > 0)
+                                ? '₩${formatter.format(baseCharge - 200)}'
+                                : '₩0',
                             20.0, FontWeight.bold, Colors.black, TextAlign.end
                           ),
                         ],

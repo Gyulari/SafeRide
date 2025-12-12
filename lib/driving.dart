@@ -144,6 +144,7 @@ class DrivingStatusBarState extends State<DrivingStatusBar> {
                       deviceNumber: rental.deviceNumber,
                       elapsed: elapsed,
                       charge: rental.charge,
+                      isCouple: rental.isCouple,
                     ),
                   ),
                 ).then((_) {

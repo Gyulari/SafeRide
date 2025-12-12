@@ -37,6 +37,7 @@ class UserInfoState extends ChangeNotifier {
 
 class RentalState extends ChangeNotifier {
   bool isRiding = false;
+  bool isCouple = false;
 
   int deviceNumber = 0;
   int battery = 0;
@@ -56,7 +57,7 @@ class RentalState extends ChangeNotifier {
     _onLocationChanged = callback;
   }
 
-  void startDestinationSelection(int deviceNumber, int battery, int charge) {
+  void startDestinationSelection(int deviceNumber, int battery, int charge, bool isCouple) {
     isSelectingDestination = true;
     isRiding = false;
     destination = null;
@@ -64,6 +65,7 @@ class RentalState extends ChangeNotifier {
     this.deviceNumber = deviceNumber;
     this.battery = battery;
     this.charge = charge;
+    this.isCouple = isCouple;
     notifyListeners();
   }
 
@@ -94,6 +96,7 @@ class RentalState extends ChangeNotifier {
     battery = 0;
     charge = 0;
     rentalStartTime = null;
+    isCouple = false;
     _stopGPS();
     clearRouteTracking();
     notifyListeners();

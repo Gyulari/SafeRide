@@ -33,6 +33,10 @@ class _RentalScreenState extends State<RentalScreen> {
   int useMileage = 0;
   bool isUsingMileage = false;
 
+  bool isCouple = false;
+  String coupleCode = '000000';
+
+
   @override
   void initState() {
     super.initState();
@@ -148,6 +152,12 @@ class _RentalScreenState extends State<RentalScreen> {
     });
   }
 
+  String generateSixDigitCode() {
+    final random = Random();
+    final code = 100000 + random.nextInt(900000);
+    return code.toString();
+  }
+
   @override
   Widget build(BuildContext context) {
     finalCharge = device.price * 10
@@ -182,6 +192,7 @@ class _RentalScreenState extends State<RentalScreen> {
             _deviationDetectCard(),
             _priceInfoCard(device.price),
             _paymentMethodCard(finalCharge),
+            _couplePaymentCard(finalCharge),
 
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 20.0),
@@ -197,7 +208,7 @@ class _RentalScreenState extends State<RentalScreen> {
                   ),
                   onPressed: () {
                     Provider.of<RentalState>(context, listen: false)
-                      .startDestinationSelection(device.dNumber, device.battery, device.price);
+                      .startDestinationSelection(device.dNumber, device.battery, device.price, isCouple);
 
                     _updateMileage();
 
@@ -590,6 +601,108 @@ class _RentalScreenState extends State<RentalScreen> {
               13.0, FontWeight.w600, Color(0xFF2F80FF), TextAlign.start
             ),
           )
+        ],
+      ),
+    );
+  }
+
+  Widget _couplePaymentCard(int finalCharge) {
+    return SectionCard(
+      title: '결제 방법',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.family_restroom,
+                size: 32.0,
+                color: Colors.green[700],
+              ),
+
+              SizedBox(width: 10.0),
+
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    simpleText(
+                        '커플/가족 요금제 사용',
+                        14.0, FontWeight.w600, Colors.black, TextAlign.start
+                    ),
+                    SizedBox(height: 2.0),
+                  ],
+                ),
+              ),
+
+              Switch(
+                  value: isCouple,
+                  onChanged: (v) {
+                    setState(() {
+                      isCouple = v;
+                      coupleCode = generateSixDigitCode();
+                    });
+                  }
+              ),
+            ],
+          ),
+
+          SizedBox(height: 12.0),
+
+          if(isCouple) ...[
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 10.0),
+              decoration: BoxDecoration(
+                color: Color(0xFFE8F2FF),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  simpleText(
+                    '동시 입력 코드 발급 : $coupleCode',
+                    13.0, FontWeight.w600, Color(0xFF2F80FF), TextAlign.start
+                  ),
+                  SizedBox(height: 20.0),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 60.0,
+                    child: TextField(
+                      decoration: InputDecoration(
+                        labelText: '발급된 동시 입력 코드를 입력해주세요',
+                        labelStyle: TextStyle(
+                          color: Color(0xFF2F80FF),
+                          fontSize: 13.0,
+                          fontWeight: FontWeight.w600
+                        ),
+                        border: OutlineInputBorder(),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Color(0xFF2F80FF), width: 1.5),
+                          borderRadius: BorderRadius.circular(12.0),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Color(0xFF2F80FF), width: 1.5),
+                          borderRadius: BorderRadius.circular(12.0),
+                        ),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 15.0),
+                  simpleText(
+                    '함께 이용하시는 이용자와 같은 코드를 입력한 후 대여를 시작하면 주행 종료 후 할인이 적용됩니다!',
+                    15.0, FontWeight.w600, Color(0xFF2F80FF), TextAlign.start
+                  ),
+                  SizedBox(height: 15.0),
+                  simpleText(
+                    '[주의] 커플/가족 요금제는 먼 거리에 떨어진 킥보드끼리의 대여에는 적용되지 않습니다!',
+                    15.0, FontWeight.w600, Colors.redAccent, TextAlign.start
+                  )
+                ]
+              )
+            )
+          ]
         ],
       ),
     );
