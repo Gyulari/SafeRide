@@ -37,8 +37,38 @@ class DrivingStatusBarState extends State<DrivingStatusBar> {
     return '${two(d.inHours)}:${two(d.inMinutes % 60)}:${two(d.inSeconds % 60)}';
   }
 
+  double calculateDistanceMeters(double lat1, double lng1, double lat2, double lng2) {
+    const R = 6371000;
+
+    double dLat = (lat2 - lat1) * pi / 180;
+    double dLng = (lng2 - lng1) * pi / 180;
+
+    double a = sin(dLat / 2) * sin(dLat / 2) +
+        cos(lat1 * pi / 180) *
+            cos(lat2 * pi / 180) *
+            sin(dLng / 2) *
+            sin(dLng / 2);
+
+    return R * (2 * atan2(sqrt(a), sqrt(1-a)));
+  }
+
   @override
   Widget build(BuildContext context) {
+    double distanceMeters = 0;
+
+    if(widget.rentalState.currentPosition != null && widget.rentalState.destination != null) {
+      distanceMeters = calculateDistanceMeters(
+        widget.rentalState.currentPosition!.latitude,
+        widget.rentalState.currentPosition!.longitude,
+        widget.rentalState.destination!.latitude,
+        widget.rentalState.destination!.longitude,
+      );
+    }
+
+    String displayDistance = (distanceMeters >= 1000)
+      ? '${(distanceMeters / 1000).toStringAsFixed(2)} km'
+      : '${distanceMeters.toStringAsFixed(0)} m';
+
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 18.0, vertical: 14.0),
       decoration: BoxDecoration(
@@ -65,6 +95,12 @@ class DrivingStatusBarState extends State<DrivingStatusBar> {
                   Icon(Icons.ev_station_outlined, size: 16.0, color: Colors.green.shade800),
                   simpleText(
                     '배터리 ${widget.rentalState.battery}%',
+                    16.0, FontWeight.bold, Colors.green.shade800, TextAlign.start
+                  ),
+                  SizedBox(width: 12.0),
+                  Icon(Icons.route_outlined, size: 16.0, color: Colors.green.shade800),
+                  simpleText(
+                    displayDistance,
                     16.0, FontWeight.bold, Colors.green.shade800, TextAlign.start
                   ),
                 ],

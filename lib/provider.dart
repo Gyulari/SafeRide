@@ -47,6 +47,15 @@ class RentalState extends ChangeNotifier {
   LatLng? destination;
   List<LatLng> routePath = [];
 
+  LatLng? previousPosition;
+  LatLng? currentPosition;
+  StreamSubscription<Position>? _positionsStream;
+  void Function(Position, bool)? _onLocationChanged;
+
+  void registerLocationUpdateCallback(void Function(Position, bool) callback) {
+    _onLocationChanged = callback;
+  }
+
   void startDestinationSelection(int deviceNumber, int battery, int charge) {
     isSelectingDestination = true;
     isRiding = false;
@@ -61,8 +70,13 @@ class RentalState extends ChangeNotifier {
   void setDestination(LatLng dest) {
     destination = dest;
     isSelectingDestination = false;
-    isRiding = true;
     rentalStartTime = DateTime.now();
+    startRiding();
+  }
+
+  void startRiding() {
+    isRiding = true;
+    _startGPS();
     notifyListeners();
   }
 
@@ -80,6 +94,63 @@ class RentalState extends ChangeNotifier {
     battery = 0;
     charge = 0;
     rentalStartTime = null;
+    _stopGPS();
+    clearRouteTracking();
+    notifyListeners();
+  }
+
+  void _startGPS() async {
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if(!serviceEnabled) return;
+
+    LocationPermission permission = await Geolocator.checkPermission();
+    if(permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if(permission == LocationPermission.denied) return;
+    }
+
+    _positionsStream?.cancel();
+
+    _positionsStream = Geolocator.getPositionStream(
+      locationSettings: LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 10,
+      ),
+    ).listen((Position pos) {
+      currentPosition = LatLng(pos.latitude, pos.longitude);
+
+      if(_onLocationChanged != null) {
+        _onLocationChanged!(pos, true);
+      }
+
+      updatePosition(pos);
+
+      notifyListeners();
+    });
+  }
+
+  void _stopGPS() {
+    _positionsStream?.cancel();
+    _positionsStream = null;
+  }
+
+  void updatePosition(Position newPos) {
+    if(previousPosition != null) {
+      routePath.add(previousPosition!);
+      routePath.add(LatLng(newPos.latitude, newPos.longitude));
+    }
+
+    debugPrint('Previous : $previousPosition');
+    debugPrint('New : $newPos');
+
+    previousPosition = LatLng(newPos.latitude, newPos.longitude);
+
+    notifyListeners();
+  }
+
+  void clearRouteTracking() {
+    previousPosition = null;
+    routePath.clear();
     notifyListeners();
   }
 }

@@ -20,8 +20,6 @@ class _MapViewState extends State<MapView> {
   StreamSubscription<Position>? _positionStream;
   bool _isGPSActive = false;
 
-  bool isRiding = false;
-
   final _searchC = TextEditingController();
 
   LatLng curCenter = LatLng(37.5665, 126.9780);
@@ -38,6 +36,14 @@ class _MapViewState extends State<MapView> {
   LatLng? selectedLatLng;
 
   bool _deviceInfoLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    final rentalState = Provider.of<RentalState>(context, listen: false);
+    rentalState.registerLocationUpdateCallback(_updateCurrentUserPosition);
+  }
 
   Future<List<LatLng>> _keywordSearch(String keyword) async {
     const apiKey = '5d85b804b65d01a8faf7acb5d95d8c76';
@@ -192,7 +198,7 @@ class _MapViewState extends State<MapView> {
         curUserPos = LatLng(position.latitude, position.longitude);
       });
 
-      _updateCurrentUserPosition(position);
+      _updateCurrentUserPosition(position, false);
 
       if(!_hasCenteredToUser) {
         mapController.setCenter(
@@ -216,10 +222,12 @@ class _MapViewState extends State<MapView> {
     curUserPos = null;
   }
 
-  void _updateCurrentUserPosition(Position pos) async {
+  void _updateCurrentUserPosition(Position pos, bool isRiding) async {
     final latLng = LatLng(pos.latitude, pos.longitude);
 
-    mapController.setCenter(latLng);
+    if(!isRiding){
+      mapController.setCenter(latLng);
+    }
 
     final icon = await MarkerIcon.fromAsset('assets/icons/user_icon_pos.png');
 
@@ -234,7 +242,12 @@ class _MapViewState extends State<MapView> {
 
       curPosMarker.clear();
       curPosMarker.add(curPos);
-      markers = {...deviceMarkers, ...curPosMarker};
+
+      if(isRiding) {
+        markers = {...destinationMarker, ...curPosMarker};
+      } else {
+        markers = {...deviceMarkers, ...curPosMarker};
+      }
     });
   }
 
@@ -363,6 +376,14 @@ class _MapViewState extends State<MapView> {
             });
           },
           customOverlays: overlays.toList(),
+          polylines: [
+            Polyline(
+              polylineId: 'route',
+              points: rentalState.routePath,
+              strokeColor: Colors.blueAccent,
+              strokeWidth: 4,
+            )
+          ],
         ),
 
         SafeArea(
@@ -419,7 +440,6 @@ class _MapViewState extends State<MapView> {
                 padding: EdgeInsets.symmetric(vertical: 16.0),
               ),
               onPressed: () async {
-                isRiding = true;
                 final center = await mapController.getCenter();
 
                 rentalState.setDestination(center);
